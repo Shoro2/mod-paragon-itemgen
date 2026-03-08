@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+DB_WORLD_CUSTOM_PATHS+=(
+    "$MOD_PARAGON_ITEMGEN_ROOT/data/sql/db-world/"
+)
+
+DB_CHARACTERS_CUSTOM_PATHS+=(
+    "$MOD_PARAGON_ITEMGEN_ROOT/data/sql/db-characters/"
+)

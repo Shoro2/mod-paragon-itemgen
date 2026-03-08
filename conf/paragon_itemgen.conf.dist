@@ -1,0 +1,47 @@
+[worldserver]
+
+###############################################################################
+# PARAGON ITEM SCALING MODULE
+#
+# Applies bonus enchantments to weapons and armor based on the player's
+# Paragon level. Stats are chosen based on class/spec (talent tree).
+#
+# Items keep their stats permanently. Changing spec only affects NEW items.
+#
+# Trade/Mail restrictions prevent high-paragon players from passing
+# overpowered items to low-paragon players.
+###############################################################################
+
+# Enable/disable the module entirely
+ParagonItemGen.Enable = 1
+
+# Which item sources get paragon enchantments
+ParagonItemGen.OnLoot   = 1
+ParagonItemGen.OnCreate = 1
+ParagonItemGen.OnQuest  = 1
+ParagonItemGen.OnVendor = 1
+
+# Scaling formula: statAmount = ceil(paragonLevel * ScalingFactor * QualityMultiplier)
+# At ScalingFactor=0.5 and Paragon Level 20:
+#   Uncommon: +5 per stat | Rare: +8 | Epic: +10 | Legendary: +13
+ParagonItemGen.ScalingFactor = 0.5
+
+# Quality multipliers (higher quality = stronger paragon bonus)
+ParagonItemGen.QualityMult.Uncommon  = 0.5
+ParagonItemGen.QualityMult.Rare      = 0.75
+ParagonItemGen.QualityMult.Epic      = 1.0
+ParagonItemGen.QualityMult.Legendary = 1.25
+
+# Minimum paragon level required for items to receive enchantments
+ParagonItemGen.MinParagonLevel = 1
+
+# Minimum item level required (items below this are not enchanted)
+ParagonItemGen.MinItemLevel = 150
+
+# Trade/transfer restrictions for paragon-enchanted items
+# BlockTrade: prevent trading to players with lower paragon level
+# BlockMail:  prevent mailing to players with lower paragon level
+# BlockAuction: prevent listing paragon-enchanted items on AH (TODO)
+ParagonItemGen.BlockTrade   = 1
+ParagonItemGen.BlockMail    = 1
+ParagonItemGen.BlockAuction = 1
