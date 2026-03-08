@@ -55,3 +55,17 @@ ParagonItemGen.MinItemLevel = 150
 # Transfer restrictions
 ParagonItemGen.BlockTrade = 1
 ParagonItemGen.BlockMail  = 1
+
+# Cursed items: small chance for an item to roll "cursed"
+# Cursed items get all stats at CursedMultiplier * max value and become soulbound.
+# A shadow visual plays on the player when this happens.
+#
+# Chance in percent (0 = disabled, 1.0 = 1% chance)
+ParagonItemGen.CursedChance = 1.0
+#
+# Stat multiplier for cursed items (1.5 = 150% of max stat value)
+ParagonItemGen.CursedMultiplier = 1.5
+#
+# SpellVisualKit ID for the shadow animation on cursed roll
+# Default 5765 is a shadow/dark visual effect. Change to any SpellVisualKit.dbc entry.
+ParagonItemGen.CursedVisualKit = 5765
