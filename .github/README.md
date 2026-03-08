@@ -14,8 +14,10 @@ Requires [mod-paragon](https://github.com/Shoro2/mod-paragon) for the Paragon pr
 | 1 | Main Stat | Player choice (Str/Agi/Int/Spi) |
 | 2 | Combat Rating | Random from role pool |
 | 3 | Combat Rating | Random from role pool (no duplicate) |
-| 4 | Talent Spell | Role-based (TODO: custom spells) |
+| 4 | Cursed Marker | "Cursed" label if item rolled cursed |
 
+- **Random stat rolls**: Each stat rolls independently from 1 to the calculated max value
+- **Cursed items** (1% chance, configurable): All stats boosted to 150% of max, item becomes soulbound, shadow visual plays
 - **3 roles** with distinct combat rating pools:
 
 | Role | Combat Rating Pool |
@@ -24,9 +26,10 @@ Requires [mod-paragon](https://github.com/Shoro2/mod-paragon) for the Paragon pr
 | DPS | Crit, Haste, Hit, Armor Pen, Expertise, Attack Power, Spell Power |
 | Healer | Crit, Haste, Spell Power, Mana Regen |
 
-- **Scaling formula**: `ceil(paragonLevel * scalingFactor * qualityMultiplier)`
+- **Scaling formula**: `ceil(paragonLevel * scalingFactor * qualityMultiplier)`, capped at 200
 - **Permanent stats**: Items keep their enchantments forever. Changing role/stat only affects *new* items.
 - **Transfer restrictions**: Trade and mail of paragon-enchanted items is blocked to players with a lower Paragon level.
+- **AIO tooltip enhancement**: Client-side Lua addon colorizes cursed items in purple with a warning line.
 
 ## Player Commands
 
@@ -47,7 +50,9 @@ With `ScalingFactor = 0.5` (default):
 | 50 | +13 per stat | +19 | +25 | +32 |
 | 100 | +25 per stat | +38 | +50 | +63 |
 
-Each item receives 4 stat enchantments (Stamina + Main Stat + 2 Combat Ratings), so total bonus is 4× the above values.
+Each stat rolls **randomly from 1 to the max value** shown above. Cursed items get all stats at 150% of max instead.
+
+Each item receives 4 stat enchantments (Stamina + Main Stat + 2 Combat Ratings).
 
 ## Installation
 
@@ -61,6 +66,8 @@ Each item receives 4 stat enchantments (Stamina + Main Stat + 2 Combat Ratings),
    - `data/sql/db-world/paragon_itemgen_enchantments.sql` → world database
    - `data/sql/db-characters/paragon_item_enchants.sql` → characters database
 4. Copy `conf/paragon_itemgen.conf.dist` to your server's config directory and adjust values.
+5. (Optional) Copy `Paragon_System_LUA/*.lua` to your server's `lua_scripts/` folder for AIO tooltip enhancement.
+6. (Optional) Patch client DBC: `python3 tools/patch_dbc.py SpellItemEnchantment.dbc SpellItemEnchantment_patched.dbc`
 
 ## Configuration
 
@@ -79,12 +86,15 @@ See [`conf/paragon_itemgen.conf.dist`](conf/paragon_itemgen.conf.dist) for all o
 | `ParagonItemGen.BlockTrade` | 1 | Block trading to lower-paragon players |
 | `ParagonItemGen.BlockMail` | 1 | Block mailing to lower-paragon players |
 | `ParagonItemGen.QualityMult.*` | varies | Per-quality scaling multipliers |
+| `ParagonItemGen.CursedChance` | 1.0 | Chance (%) for cursed roll (0 = disabled) |
+| `ParagonItemGen.CursedMultiplier` | 1.5 | Stat multiplier for cursed items (1.5 = 150%) |
+| `ParagonItemGen.CursedVisualKit` | 5765 | SpellVisualKit ID for shadow animation |
 
 ## Database Tables
 
 ### `spellitemenchantment_dbc` (world DB)
 
-3,400 custom enchantment entries (IDs 900001–916200). 17 stat types × 200 amount levels. Each entry has a single `ITEM_ENCHANTMENT_TYPE_STAT` effect.
+3,401 custom enchantment entries (IDs 900001–916200 + 920001). 17 stat types × 200 amount levels, plus one "Cursed" marker. Each stat entry has a single `ITEM_ENCHANTMENT_TYPE_STAT` effect.
 
 ### `character_paragon_role` (characters DB)
 
@@ -107,6 +117,7 @@ Tracks paragon enchantments on items for transfer restriction enforcement.
 | `combatRating1` | TINYINT | First combat rating (ParagonStatIndex) |
 | `combatRating2` | TINYINT | Second combat rating (ParagonStatIndex) |
 | `statAmount` | INT | Amount per stat |
+| `cursed` | TINYINT | 1 if item rolled cursed |
 
 ## Enchantment ID Layout
 
@@ -134,13 +145,15 @@ Stat Index | Stat              | ITEM_MOD | ID Range
 15         | Attack Power      | 38       | 915001 – 915200
 16         | Mana Regeneration | 43       | 916001 – 916200
 
-Reserved: 920000+ for talent spell enchantments
+920001     | Cursed (marker)   | —        | 920001 (slot 11)
+
+Reserved: 920002+ for talent spell enchantments
 ```
 
 ## Known Limitations / TODO
 
-- **Talent Spell (Slot 4)**: Not yet implemented. Waiting for custom spell creation.
-- **Auction House restriction**: AzerothCore has no `CanListAuction` hook. Possible solutions: core patch, `OnAuctionAdd` cancellation, or soulbinding paragon items.
+- **Talent Spell (Slot 4)**: Currently used only for the "Cursed" marker. Custom talent spells (IDs 920002+) are not yet implemented.
+- **Auction House restriction**: AzerothCore has no `CanListAuction` hook. Cursed items are soulbound and can't be listed. Non-cursed paragon items can still be auctioned.
 - **PROP_ENCHANTMENT_SLOT conflict**: Items with existing random properties (e.g., "of the Bear") will have those replaced by paragon enchantments.
 - **DB queries on every item drop**: Paragon level and role are fetched from DB on each item acquisition. Consider in-memory caching for high-traffic servers.
 
