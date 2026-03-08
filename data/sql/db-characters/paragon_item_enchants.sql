@@ -20,5 +20,19 @@ CREATE TABLE IF NOT EXISTS `character_paragon_item` (
   `combatRating1` tinyint unsigned NOT NULL DEFAULT 0,
   `combatRating2` tinyint unsigned NOT NULL DEFAULT 0,
   `statAmount` int unsigned NOT NULL DEFAULT 0,
+  `cursed` tinyint unsigned NOT NULL DEFAULT 0 COMMENT '1 if item rolled cursed',
   PRIMARY KEY (`itemGuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Migration: add cursed column if table already exists without it
+-- (safe to run multiple times)
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'character_paragon_item'
+  AND COLUMN_NAME = 'cursed');
+SET @sqlstmt := IF(@exist = 0,
+  'ALTER TABLE `character_paragon_item` ADD COLUMN `cursed` tinyint unsigned NOT NULL DEFAULT 0 AFTER `statAmount`',
+  'SELECT 1');
+PREPARE stmt FROM @sqlstmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

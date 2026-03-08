@@ -41,7 +41,10 @@ mod-paragon-itemgen/
 │   ├── db-characters/
 │   │   └── paragon_item_enchants.sql # character_paragon_role + character_paragon_item tables
 │   └── db-world/
-│       └── paragon_itemgen_enchantments.sql  # 3400 spellitemenchantment_dbc entries
+│       └── paragon_itemgen_enchantments.sql  # 3401 spellitemenchantment_dbc entries (3400 stats + 1 cursed)
+├── Paragon_System_LUA/
+│   ├── ItemGen_Client.lua            # AIO client addon: tooltip enhancement for cursed items
+│   └── ItemGen_Server.lua            # AIO server: registers client addon
 ├── src/
 │   ├── MP_loader.cpp                 # Module entry point (Addmod_paragon_itemgenScripts)
 │   ├── ParagonItemGen.h              # Header: constants, enums (ParagonStatIndex, ParagonRole)
@@ -65,7 +68,8 @@ Stat Index 2  = Agility (ITEM_MOD 3)    → IDs 902001–902200
 ...
 Stat Index 16 = Mana Regen (ITEM_MOD 43) → IDs 916001–916200
 
-Reserved: 920000+ for talent spell enchantments (not yet created)
+ID 920001 = "Cursed" marker (no stat effect, slot 11 label only)
+Reserved: 920002+ for talent spell enchantments (not yet created)
 ```
 
 Each enchantment has exactly **one** `ITEM_ENCHANTMENT_TYPE_STAT` (type 5) effect. Multiple stats per item are achieved by using separate enchantment slots.
@@ -103,6 +107,7 @@ Tracks paragon-enchanted items for trade/mail restriction enforcement.
 | `combatRating1` | TINYINT UNSIGNED | First combat rating (ParagonStatIndex enum) |
 | `combatRating2` | TINYINT UNSIGNED | Second combat rating (ParagonStatIndex enum) |
 | `statAmount` | INT UNSIGNED | Per-stat amount applied |
+| `cursed` | TINYINT UNSIGNED | 1 if item rolled cursed |
 
 ### External Dependency: `character_paragon` (from mod-paragon)
 

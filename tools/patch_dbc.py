@@ -64,6 +64,7 @@ PARAGON_STATS = [
 # ID layout: 900000 + stat_index * 1000 + amount (1-200)
 BASE_ID = 900000
 MAX_AMOUNT = 200
+CURSED_ENCHANT_ID = 920001
 
 
 def read_dbc(filepath):
@@ -161,6 +162,17 @@ def generate_paragon_entries(string_block):
             fields[37] = 0                 # MinLevel
 
             new_records.append(fields)
+
+    # Add "Cursed" marker enchantment (ID 920001, no stat effect)
+    name = "Cursed"
+    name_offset = len(sb)
+    sb.extend(name.encode('utf-8'))
+    sb.append(0)
+
+    fields = [0] * FIELDS_PER_RECORD
+    fields[0] = CURSED_ENCHANT_ID
+    fields[14] = name_offset  # Name_Lang_enUS
+    new_records.append(fields)
 
     return new_records, bytes(sb)
 
