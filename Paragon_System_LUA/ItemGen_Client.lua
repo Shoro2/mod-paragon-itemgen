@@ -4,6 +4,7 @@
 -- Scans item tooltips for "Cursed" enchantment text (from slot 11)
 -- and enhances the display with purple color and warning text.
 -- Also colorizes "Paragon +X" stat lines.
+-- Adds a purple glow border to cursed item tooltips.
 -- =============================================================
 
 local AIO = AIO or require("AIO")
@@ -48,7 +49,7 @@ local function ResetTooltipBorder(tooltip)
 end
 
 -- ============================================================
--- Tooltip hooking
+-- Tooltip enhancement logic
 -- ============================================================
 
 local function EnhanceTooltip(tooltip)
@@ -64,7 +65,7 @@ local function EnhanceTooltip(tooltip)
         if line then
             local text = line:GetText()
             if text then
-                if text == CURSED_TEXT then
+                if string.find(text, CURSED_TEXT, 1, true) then
                     hasCursed = true
                 end
                 if string.find(text, PARAGON_PREFIX, 1, true) then
@@ -86,7 +87,7 @@ local function EnhanceTooltip(tooltip)
             local text = line:GetText()
             if text then
                 -- Colorize "Cursed" line
-                if text == CURSED_TEXT then
+                if string.find(text, CURSED_TEXT, 1, true) and not string.find(text, PARAGON_PREFIX, 1, true) then
                     line:SetText(COLOR_CURSED .. ">> CURSED <<" .. COLOR_RESET)
                     line:SetTextColor(0.608, 0.349, 0.714) -- purple
                 -- Colorize paragon stat lines
@@ -113,19 +114,86 @@ local function EnhanceTooltip(tooltip)
     tooltip:Show()
 end
 
--- Hook both main tooltip and comparison tooltips
-GameTooltip:HookScript("OnTooltipSetItem", function(self) EnhanceTooltip(self) end)
-ItemRefTooltip:HookScript("OnTooltipSetItem", function(self) EnhanceTooltip(self) end)
+-- ============================================================
+-- Tooltip hooking via hooksecurefunc
+--
+-- HookScript("OnTooltipSetItem") may not fire reliably in AIO
+-- context. Instead, we post-hook the individual Set* methods
+-- that populate item tooltips, which is more reliable.
+-- ============================================================
 
--- Reset border when tooltip is cleared (non-cursed items, empty hover)
-GameTooltip:HookScript("OnTooltipCleared", function(self) ResetTooltipBorder(self) end)
-ItemRefTooltip:HookScript("OnTooltipCleared", function(self) ResetTooltipBorder(self) end)
+-- Track last processed tooltip item to avoid re-processing
+-- when multiple Set* methods fire for the same tooltip display
+local lastProcessed = {}
+
+local function SafeEnhance(tooltip)
+    local _, itemLink = tooltip:GetItem()
+    if not itemLink then return end
+
+    -- Avoid re-processing the same item on the same tooltip
+    if lastProcessed[tooltip] == itemLink then return end
+    lastProcessed[tooltip] = itemLink
+
+    EnhanceTooltip(tooltip)
+end
+
+local function ClearTooltipState(tooltip)
+    lastProcessed[tooltip] = nil
+    ResetTooltipBorder(tooltip)
+end
+
+-- List of GameTooltip methods that display item information
+local ITEM_METHODS = {
+    "SetBagItem",
+    "SetInventoryItem",
+    "SetLootItem",
+    "SetLootRollItem",
+    "SetMerchantItem",
+    "SetQuestItem",
+    "SetQuestLogItem",
+    "SetTradePlayerItem",
+    "SetTradeTargetItem",
+    "SetHyperlink",
+    "SetAuctionItem",
+    "SetAuctionSellItem",
+    "SetGuildBankItem",
+    "SetInboxItem",
+    "SetSendMailItem",
+    "SetTradeSkillItem",
+    "SetCraftItem",
+}
+
+local function HookTooltip(tooltip)
+    for _, method in ipairs(ITEM_METHODS) do
+        if tooltip[method] then
+            hooksecurefunc(tooltip, method, function(self)
+                SafeEnhance(self)
+            end)
+        end
+    end
+
+    -- Clear state when tooltip is hidden or cleared
+    if tooltip.HookScript then
+        tooltip:HookScript("OnTooltipCleared", function(self)
+            ClearTooltipState(self)
+        end)
+        tooltip:HookScript("OnHide", function(self)
+            ClearTooltipState(self)
+        end)
+    end
+end
+
+-- Hook main tooltips
+HookTooltip(GameTooltip)
+HookTooltip(ItemRefTooltip)
 
 -- Hook shopping (comparison) tooltips
 for i = 1, 3 do
     local tip = _G["ShoppingTooltip" .. i]
     if tip then
-        tip:HookScript("OnTooltipSetItem", function(self) EnhanceTooltip(self) end)
-        tip:HookScript("OnTooltipCleared", function(self) ResetTooltipBorder(self) end)
+        HookTooltip(tip)
     end
 end
+
+-- Debug: confirm addon loaded
+DEFAULT_CHAT_FRAME:AddMessage("|cff9b59b6[Paragon ItemGen]|r Tooltip enhancement loaded.")
