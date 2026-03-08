@@ -51,23 +51,21 @@ static bool   conf_PassiveSpellEnable  = true;
 static float  conf_PassiveSpellChance  = 100.0f;
 
 // ============================================================
-// Passive Spell Pool
+// Passive Spell Pool (spec-based)
 // ============================================================
 
-struct PassiveSpellEntry
+struct SpecPoolEntry
 {
     uint32 enchantmentId;
-    uint32 spellId;
     std::string name;
-    uint8  category;
-    uint8  roleMask;
     uint32 weight;
     uint32 minParagonLevel;
     uint32 minItemLevel;
 };
 
-static std::vector<PassiveSpellEntry> sPassiveSpellPool;
-static std::mutex sPassiveSpellPoolMutex;
+// specId -> list of available spells with weights
+static std::unordered_map<uint8, std::vector<SpecPoolEntry>> sSpecPools;
+static std::mutex sSpecPoolMutex;
 
 // ============================================================
 // Stat name lookup for debug logging
@@ -289,67 +287,75 @@ static void PickTwoRandomRatings(ParagonRole role, ParagonStatIndex& out1, Parag
 
 static void LoadPassiveSpellPool()
 {
-    std::lock_guard<std::mutex> lock(sPassiveSpellPoolMutex);
-    sPassiveSpellPool.clear();
+    std::lock_guard<std::mutex> lock(sSpecPoolMutex);
+    sSpecPools.clear();
 
+    // JOIN the assignment table with the pool catalog to get per-spec entries
     QueryResult result = WorldDatabase.Query(
-        "SELECT `enchantmentId`, `spellId`, `name`, `category`, `roleMask`, "
-        "`weight`, `minParagonLevel`, `minItemLevel` "
-        "FROM `paragon_passive_spell_pool` ORDER BY `id`");
+        "SELECT a.`specId`, a.`enchantmentId`, p.`name`, a.`weight`, "
+        "p.`minParagonLevel`, p.`minItemLevel` "
+        "FROM `paragon_spec_spell_assign` a "
+        "INNER JOIN `paragon_passive_spell_pool` p ON a.`enchantmentId` = p.`enchantmentId` "
+        "ORDER BY a.`specId`, a.`enchantmentId`");
 
     if (!result)
     {
-        LOG_WARN("module", "ParagonItemGen: paragon_passive_spell_pool table is empty or missing!");
+        LOG_WARN("module", "ParagonItemGen: No spec-spell assignments found (paragon_spec_spell_assign empty or no matching pool entries)!");
         return;
     }
 
+    uint32 totalEntries = 0;
     do
     {
         Field* fields = result->Fetch();
-        PassiveSpellEntry entry;
-        entry.enchantmentId  = fields[0].Get<uint32>();
-        entry.spellId        = fields[1].Get<uint32>();
-        entry.name           = fields[2].Get<std::string>();
-        entry.category       = fields[3].Get<uint8>();
-        entry.roleMask       = fields[4].Get<uint8>();
-        entry.weight         = fields[5].Get<uint32>();
-        entry.minParagonLevel = fields[6].Get<uint32>();
-        entry.minItemLevel   = fields[7].Get<uint32>();
+        uint8  specId        = fields[0].Get<uint8>();
+        uint32 enchantmentId = fields[1].Get<uint32>();
+        std::string name     = fields[2].Get<std::string>();
+        uint32 weight        = fields[3].Get<uint32>();
+        uint32 minPLevel     = fields[4].Get<uint32>();
+        uint32 minILevel     = fields[5].Get<uint32>();
 
-        if (!sSpellItemEnchantmentStore.LookupEntry(entry.enchantmentId))
+        if (specId == 0 || specId >= SPEC_MAX)
         {
-            LOG_ERROR("module", "ParagonItemGen: Passive spell pool entry with enchantmentId {} "
-                "not found in spellitemenchantment_dbc, skipping.", entry.enchantmentId);
+            LOG_ERROR("module", "ParagonItemGen: Invalid specId {} in paragon_spec_spell_assign, skipping.", specId);
             continue;
         }
 
-        sPassiveSpellPool.push_back(entry);
+        if (!sSpellItemEnchantmentStore.LookupEntry(enchantmentId))
+        {
+            LOG_ERROR("module", "ParagonItemGen: Enchantment {} not found in DBC for spec {}, skipping.",
+                enchantmentId, specId);
+            continue;
+        }
+
+        sSpecPools[specId].push_back({ enchantmentId, name, weight, minPLevel, minILevel });
+        ++totalEntries;
     } while (result->NextRow());
 
-    LOG_INFO("module", "ParagonItemGen: Loaded {} passive spell pool entries.", sPassiveSpellPool.size());
+    LOG_INFO("module", "ParagonItemGen: Loaded {} spec-spell assignments across {} specs.",
+        totalEntries, sSpecPools.size());
 }
 
-static uint8 RoleMaskFromRole(ParagonRole role)
+static ParagonSpec GetPlayerSpec(Player* player)
 {
-    switch (role)
-    {
-        case ROLE_TANK:   return PARAGON_ROLE_MASK_TANK;
-        case ROLE_DPS:    return PARAGON_ROLE_MASK_DPS;
-        case ROLE_HEALER: return PARAGON_ROLE_MASK_HEALER;
-        default:          return PARAGON_ROLE_MASK_DPS;
-    }
-}
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT `specId` FROM `character_paragon_spec` WHERE `characterId` = {}",
+        player->GetGUID().GetCounter());
 
-static bool IsPassiveSpellEnchantment(uint32 enchantId)
-{
-    return enchantId >= PARAGON_PASSIVE_ENCHANT_MIN &&
-           enchantId <= PARAGON_PASSIVE_ENCHANT_MAX;
+    if (!result)
+        return SPEC_NONE;
+
+    uint8 specId = (*result)[0].Get<uint8>();
+    if (specId >= SPEC_MAX)
+        return SPEC_NONE;
+
+    return static_cast<ParagonSpec>(specId);
 }
 
 // Returns 0 if no eligible passive spell found
-static uint32 RollPassiveSpellEnchantment(ParagonRole role, uint32 paragonLevel, uint32 itemLevel)
+static uint32 RollPassiveSpellEnchantment(ParagonSpec spec, uint32 paragonLevel, uint32 itemLevel)
 {
-    if (!conf_PassiveSpellEnable || sPassiveSpellPool.empty())
+    if (!conf_PassiveSpellEnable || spec == SPEC_NONE)
         return 0;
 
     // Check if this item gets a passive spell at all
@@ -361,18 +367,22 @@ static uint32 RollPassiveSpellEnchantment(ParagonRole role, uint32 paragonLevel,
             return 0;
     }
 
-    uint8 roleBit = RoleMaskFromRole(role);
-
-    // Build eligible list with weights
+    // Build eligible list from this spec's pool
     std::vector<std::pair<uint32, uint32>> eligible; // enchantmentId, weight
     uint32 totalWeight = 0;
 
     {
-        std::lock_guard<std::mutex> lock(sPassiveSpellPoolMutex);
-        for (auto const& entry : sPassiveSpellPool)
+        std::lock_guard<std::mutex> lock(sSpecPoolMutex);
+        auto it = sSpecPools.find(static_cast<uint8>(spec));
+        if (it == sSpecPools.end())
         {
-            if (!(entry.roleMask & roleBit))
-                continue;
+            LOG_DEBUG("module", "ParagonItemGen: No spell pool for spec {} ({})",
+                ParagonSpecName(spec), static_cast<uint8>(spec));
+            return 0;
+        }
+
+        for (auto const& entry : it->second)
+        {
             if (paragonLevel < entry.minParagonLevel)
                 continue;
             if (itemLevel < entry.minItemLevel)
@@ -385,8 +395,8 @@ static uint32 RollPassiveSpellEnchantment(ParagonRole role, uint32 paragonLevel,
 
     if (eligible.empty() || totalWeight == 0)
     {
-        LOG_DEBUG("module", "ParagonItemGen: No eligible passive spells for role={}, pLevel={}, iLevel={}",
-            RoleToName(role), paragonLevel, itemLevel);
+        LOG_DEBUG("module", "ParagonItemGen: No eligible passive spells for spec={}, pLevel={}, iLevel={}",
+            ParagonSpecName(spec), paragonLevel, itemLevel);
         return 0;
     }
 
@@ -401,13 +411,12 @@ static uint32 RollPassiveSpellEnchantment(ParagonRole role, uint32 paragonLevel,
         cumulative += weight;
         if (roll <= cumulative)
         {
-            LOG_DEBUG("module", "ParagonItemGen: Rolled passive spell enchantment {} (roll={}/{})",
-                enchId, roll, totalWeight);
+            LOG_DEBUG("module", "ParagonItemGen: Rolled passive spell enchantment {} for spec {} (roll={}/{})",
+                enchId, ParagonSpecName(spec), roll, totalWeight);
             return enchId;
         }
     }
 
-    // Fallback (shouldn't happen)
     return eligible.back().first;
 }
 
@@ -618,6 +627,7 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
 
     // Slot 4 (11): Passive spell effect OR cursed marker
     uint32 passiveEnchantId = 0;
+    ParagonSpec playerSpec = GetPlayerSpec(player);
 
     if (isCursed)
     {
@@ -632,9 +642,9 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     }
     else
     {
-        // Normal items: roll a passive spell effect
+        // Normal items: roll a passive spell effect based on spec
         passiveEnchantId = RollPassiveSpellEnchantment(
-            roleInfo.role, paragonLevel, item->GetTemplate()->ItemLevel);
+            playerSpec, paragonLevel, item->GetTemplate()->ItemLevel);
 
         if (passiveEnchantId)
         {
@@ -672,16 +682,20 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     }
     else if (passiveEnchantId)
     {
-        // Find the name of the passive spell from the pool
+        // Find the name of the passive spell from the spec pool
         std::string passiveName = "Unknown";
         {
-            std::lock_guard<std::mutex> lock(sPassiveSpellPoolMutex);
-            for (auto const& entry : sPassiveSpellPool)
+            std::lock_guard<std::mutex> lock(sSpecPoolMutex);
+            auto it = sSpecPools.find(static_cast<uint8>(playerSpec));
+            if (it != sSpecPools.end())
             {
-                if (entry.enchantmentId == passiveEnchantId)
+                for (auto const& entry : it->second)
                 {
-                    passiveName = entry.name;
-                    break;
+                    if (entry.enchantmentId == passiveEnchantId)
+                    {
+                        passiveName = entry.name;
+                        break;
+                    }
                 }
             }
         }
@@ -691,9 +705,13 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     }
     else
     {
+        std::string specHint = "";
+        if (playerSpec == SPEC_NONE)
+            specHint = " | |cffff8000Set your spec at the Paragon Artificer NPC for passive spells!|r";
+
         ChatHandler(player->GetSession()).PSendSysMessage(
-            "|cff00ff00[Paragon]|r Item enhanced (Paragon Level {}). Sta: +{}, Main: +{}, CR1: +{}, CR2: +{}",
-            paragonLevel, staAmount, mainAmount, cr1Amount, cr2Amount);
+            "|cff00ff00[Paragon]|r Item enhanced (Paragon Level {}). Sta: +{}, Main: +{}, CR1: +{}, CR2: +{}{}",
+            paragonLevel, staAmount, mainAmount, cr1Amount, cr2Amount, specHint);
     }
 }
 

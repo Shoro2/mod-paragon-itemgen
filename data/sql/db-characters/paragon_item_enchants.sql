@@ -48,3 +48,10 @@ SET @sqlstmt2 := IF(@exist2 = 0,
 PREPARE stmt2 FROM @sqlstmt2;
 EXECUTE stmt2;
 DEALLOCATE PREPARE stmt2;
+
+-- Spec selection per character (for passive spell pool filtering)
+CREATE TABLE IF NOT EXISTS `character_paragon_spec` (
+  `characterId` int unsigned NOT NULL,
+  `specId` tinyint unsigned NOT NULL DEFAULT 0 COMMENT 'ParagonSpec enum value (1-31)',
+  PRIMARY KEY (`characterId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

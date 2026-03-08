@@ -157,8 +157,22 @@ static bool HandleParagonInfoCommand(ChatHandler* handler, Tail /*args*/)
         default:          poolDesc = "Unknown"; break;
     }
     handler->PSendSysMessage("  Combat Rating Pool: |cffffffff{}|r", poolDesc);
-    handler->PSendSysMessage("  Passive Spell: |cffffffff{}|r",
-        "Rolled per item (role-filtered from spell pool)");
+
+    // Show current spec
+    QueryResult specResult = CharacterDatabase.Query(
+        "SELECT `specId` FROM `character_paragon_spec` WHERE `characterId` = {}",
+        player->GetGUID().GetCounter());
+
+    if (specResult)
+    {
+        uint8 specId = (*specResult)[0].Get<uint8>();
+        handler->PSendSysMessage("  Talent Spec: |cffffffff{}|r (passive spells filtered by spec)",
+            ParagonSpecName(static_cast<ParagonSpec>(specId)));
+    }
+    else
+    {
+        handler->PSendSysMessage("  Talent Spec: |cffff0000Not set|r — visit the Paragon Artificer NPC!");
+    }
 
     return true;
 }
