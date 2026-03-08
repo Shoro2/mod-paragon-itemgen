@@ -37,7 +37,7 @@ static uint32 conf_MinParagonLevel = 1;
 static uint32 conf_MinItemLevel    = 150;
 static bool   conf_BlockTrade      = true;
 static bool   conf_BlockMail       = true;
-static float  conf_CursedChance    = 1.0f;
+static float  conf_CursedChance    = 50.0f;
 static float  conf_CursedMultiplier = 1.5f;
 static uint32 conf_CursedVisualKit = 5765;
 
