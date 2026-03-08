@@ -57,13 +57,6 @@ SPECS = {
     31: ("Priest — Shadow",      "Shadow"),
 }
 
-CATEGORIES = {
-    0: "stat_pct    (passive % stat aura)",
-    1: "health_dmg  (health/damage/healing %)",
-    2: "rating      (flat combat rating)",
-    3: "proc        (proc trigger spell)",
-}
-
 # ── Preset groups for quick assignment ──────────────────────────
 PRESETS = {
     "melee_dps":  [1, 2, 6, 8, 9, 11, 15, 19, 20, 21, 22],
@@ -140,28 +133,20 @@ def main():
     # 2. Spell ID (the spell_dbc entry the user already created)
     spell_id = prompt_int("Spell ID in spell_dbc", default=ench_id)
 
-    # 3. Display name (for tooltip & pool catalog)
+    # 3. Display name (used for tooltip AND pool catalog)
     name = prompt_input("Display name (e.g. '+3% Stamina' or 'Thunderstrike')")
     if not name:
         print("  Name is required.")
         sys.exit(1)
 
-    # 4. Internal pool name (short)
-    pool_name = prompt_input("Short pool name (for paragon_passive_spell_pool)", default=name)
+    # 4. Optional: min paragon level / min item level
+    min_plvl = 1
+    min_ilvl = 0
+    if prompt_yes_no("Set minimum Paragon level / item level requirements?", default="n"):
+        min_plvl = prompt_int("  Minimum Paragon level to roll", default=1, min_val=0)
+        min_ilvl = prompt_int("  Minimum item level to roll", default=0, min_val=0)
 
-    # 5. Category
-    print("\n  Categories:")
-    for cid, desc in CATEGORIES.items():
-        print(f"    {cid} = {desc}")
-    category = prompt_int("Category", default=0, min_val=0, max_val=3)
-
-    # 6. Min paragon level
-    min_plvl = prompt_int("Minimum Paragon level to roll", default=1, min_val=0)
-
-    # 7. Min item level
-    min_ilvl = prompt_int("Minimum item level to roll", default=0, min_val=0)
-
-    # 8. Spec assignments
+    # 5. Spec assignments
     print_specs()
     raw_specs = prompt_input("\nAssign to specs (IDs, presets, or mix — e.g. 'all_dps 3 5 7 18')")
     spec_ids = parse_spec_selection(raw_specs)
@@ -182,7 +167,6 @@ def main():
 
     # Escape single quotes for SQL
     name_sql = name.replace("'", "''")
-    pool_name_sql = pool_name.replace("'", "''")
 
     # spellitemenchantment_dbc
     sql_lines.append("-- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)")
@@ -204,7 +188,7 @@ def main():
     sql_lines.append(
         f"INSERT INTO `paragon_passive_spell_pool` "
         f"(`enchantmentId`, `spellId`, `name`, `category`, `minParagonLevel`, `minItemLevel`) VALUES\n"
-        f"({ench_id}, {spell_id}, '{pool_name_sql}', {category}, {min_plvl}, {min_ilvl});"
+        f"({ench_id}, {spell_id}, '{name_sql}', 0, {min_plvl}, {min_ilvl});"
     )
 
     # paragon_spec_spell_assign
