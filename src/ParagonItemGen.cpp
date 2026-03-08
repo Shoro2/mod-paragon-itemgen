@@ -169,8 +169,8 @@ static void PickTwoRandomRatings(ParagonRole role, ParagonStatIndex& out1, Parag
     // Thread-local RNG
     static thread_local std::mt19937 rng(std::random_device{}());
 
-    std::uniform_int_distribution<uint8> dist1(0, poolSize - 1);
-    uint8 idx1 = dist1(rng);
+    std::uniform_int_distribution<int> dist1(0, poolSize - 1);
+    uint8 idx1 = static_cast<uint8>(dist1(rng));
     out1 = pool[idx1];
 
     // Pick second, different from first
