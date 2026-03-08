@@ -69,3 +69,22 @@ ParagonItemGen.CursedMultiplier = 1.5
 # SpellVisualKit ID for the shadow animation on cursed roll
 # Default 5765 is a shadow/dark visual effect. Change to any SpellVisualKit.dbc entry.
 ParagonItemGen.CursedVisualKit = 5765
+
+###############################################################################
+# PASSIVE SPELL EFFECTS
+#
+# Each non-cursed item can roll a passive spell effect on Slot 4 (slot 11).
+# Effects are defined in the paragon_passive_spell_pool table (world DB)
+# and include stat % buffs, combat rating boosts, and proc effects.
+# Effects are filtered by player role and paragon/item level requirements.
+#
+# The pool is loaded on server startup and reloaded on config reload.
+# Add/remove/modify effects by editing paragon_passive_spell_pool rows.
+###############################################################################
+
+# Enable/disable passive spell effects on items
+ParagonItemGen.PassiveSpell.Enable = 1
+
+# Chance (percent) for an item to receive a passive spell effect
+# 100.0 = every item gets one, 50.0 = 50% chance, 0 = disabled
+ParagonItemGen.PassiveSpell.Chance = 100.0
