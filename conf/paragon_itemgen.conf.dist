@@ -1,0 +1,57 @@
+[worldserver]
+
+###############################################################################
+# PARAGON ITEM SCALING MODULE
+#
+# Applies bonus enchantments to weapons/armor based on player Paragon level.
+#
+# Item Enchantment Slots:
+#   Slot 0: Stamina (always applied)
+#   Slot 1: Main stat (player choice: Str/Agi/Int/Spi)
+#   Slot 2: Random combat rating (from role-based pool)
+#   Slot 3: Random combat rating (from role-based pool, no duplicate)
+#   Slot 4: Talent spell (TODO: placeholder for custom spells)
+#
+# Roles: Tank, DPS, Healer
+#   Tank pool:   Dodge, Parry, Defense, Block, Hit, Expertise
+#   DPS pool:    Crit, Haste, Hit, ArmorPen, Expertise, AP, SP
+#   Healer pool: Crit, Haste, Spell Power, MP5
+#
+# Player commands:
+#   .paragon role tank|dps|healer  (rested area only)
+#   .paragon stat str|agi|int|spi  (rested area only)
+#   .paragon info
+#
+# Items keep their stats permanently. Changing role/stat only affects NEW items.
+# Trade/Mail to lower-paragon players is blocked.
+###############################################################################
+
+# Enable/disable the module
+ParagonItemGen.Enable = 1
+
+# Item sources that receive paragon enchantments
+ParagonItemGen.OnLoot   = 1
+ParagonItemGen.OnCreate = 1
+ParagonItemGen.OnQuest  = 1
+ParagonItemGen.OnVendor = 1
+
+# Scaling formula: statAmount = ceil(paragonLevel * ScalingFactor * QualityMult)
+# Example at Paragon Level 20:
+#   Uncommon: +5 per stat | Rare: +8 | Epic: +10 | Legendary: +13
+ParagonItemGen.ScalingFactor = 0.5
+
+# Quality multipliers
+ParagonItemGen.QualityMult.Uncommon  = 0.5
+ParagonItemGen.QualityMult.Rare      = 0.75
+ParagonItemGen.QualityMult.Epic      = 1.0
+ParagonItemGen.QualityMult.Legendary = 1.25
+
+# Minimum paragon level required for enchantments
+ParagonItemGen.MinParagonLevel = 1
+
+# Minimum item level required
+ParagonItemGen.MinItemLevel = 150
+
+# Transfer restrictions
+ParagonItemGen.BlockTrade = 1
+ParagonItemGen.BlockMail  = 1
