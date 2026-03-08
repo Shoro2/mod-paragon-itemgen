@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Slot 8: Main stat (player-chosen: Str/Agi/Int/Spi)
   - Slot 9: Random combat rating from role pool
   - Slot 10: Random combat rating from role pool (no duplicate of slot 9)
-  - Slot 11: Talent spell (TODO — placeholder for custom spells)
+  - Slot 11: "Cursed" marker (enchantment ID 920001) or empty for normal items
 
 - **3 roles**: Tank, DPS, Healer — each with a distinct combat rating pool
 - **Scaling formula**: `ceil(paragonLevel × scalingFactor × qualityMultiplier)`, capped at 200
@@ -194,16 +194,31 @@ Follow AzerothCore C++ conventions:
 - `std::uniform_int_distribution<int>` (not `<uint8>` — MSVC rejects it)
 - Backtick table/column names in SQL
 
+## Cursed Items
+
+Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
+
+- **All 4 stats** set to `conf_CursedMultiplier` × max value (default 150%), capped at 200
+- **Soulbound** immediately via `item->SetBinding(true)`
+- **Shadow visual** played on the player via `player->SendPlaySpellVisual(conf_CursedVisualKit)`
+- **Slot 11** receives enchantment ID `920001` ("Cursed") — visible in the item tooltip via DBC
+- **AIO Lua addon** enhances the tooltip: colorizes "Cursed" text purple, paragon stat lines get role-colored, and a red warning line is added
+
+### Client-side Setup
+
+1. Run `tools/patch_dbc.py` on the already-patched (or original) `SpellItemEnchantment.dbc` — the script auto-removes old paragon entries before adding new ones (including the Cursed marker)
+2. Copy `Paragon_System_LUA/ItemGen_Client.lua` and `ItemGen_Server.lua` to the server's `lua_scripts/` folder (requires AIO)
+
 ## Known Issues and TODOs
 
 ### Not Yet Implemented
 
-1. **Talent Spell Slot (Slot 11)**: Placeholder — waiting for custom spell creation. Reserved enchantment IDs start at 920000. Will use `ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL` (type 3) or `ITEM_ENCHANTMENT_TYPE_COMBAT_SPELL` (type 1).
+1. **Talent Spell Slot (Slot 11)**: Currently used only for the "Cursed" marker enchantment. Custom talent spells (IDs 920002+) are not yet implemented.
 
 2. **Auction House Restriction**: AzerothCore has no `CanListAuction` or `CanCreateAuction` hook. The `OnAuctionAdd` hook fires *after* listing and returns void (cannot cancel). Options:
    - Core patch: add a `CanCreateAuction` hook returning bool
    - `OnAuctionAdd` + immediate auction cancellation/item return (hacky)
-   - Mark paragon items as soulbound (prevents all transfers, too restrictive)
+   - Cursed items are already soulbound, preventing AH listing
 
 ### Potential Improvements
 
