@@ -197,10 +197,10 @@ def main():
 
     # Check for existing paragon entries and remove them
     existing_ids = {r[0] for r in records}
-    paragon_existing = [rid for rid in existing_ids if BASE_ID < rid < BASE_ID + 20000]
+    paragon_existing = [rid for rid in existing_ids if BASE_ID < rid <= CURSED_ENCHANT_ID]
     if paragon_existing:
         print(f"  Removing {len(paragon_existing)} existing paragon entries...")
-        records = [r for r in records if not (BASE_ID < r[0] < BASE_ID + 20000)]
+        records = [r for r in records if not (BASE_ID < r[0] <= CURSED_ENCHANT_ID)]
 
     # Generate paragon entries
     total_entries = len(PARAGON_STATS) * MAX_AMOUNT
