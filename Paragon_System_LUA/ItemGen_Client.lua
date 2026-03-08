@@ -21,6 +21,33 @@ local COLOR_PARAGON     = "|cff00cc66"   -- green
 local COLOR_RESET       = "|r"
 
 -- ============================================================
+-- Tooltip border glow for cursed items
+-- ============================================================
+
+-- Purple glow color for cursed item tooltip borders
+local BORDER_CURSED_R, BORDER_CURSED_G, BORDER_CURSED_B = 0.6, 0.2, 0.8
+local BORDER_CURSED_ALPHA = 1.0
+
+-- Default tooltip border color (standard WoW tooltip border)
+local BORDER_DEFAULT_R, BORDER_DEFAULT_G, BORDER_DEFAULT_B = 0.6, 0.6, 0.6
+local BORDER_DEFAULT_ALPHA = 1.0
+
+-- Track which tooltips currently have a cursed border applied
+local cursedBorderActive = {}
+
+local function SetCursedBorder(tooltip)
+    tooltip:SetBackdropBorderColor(BORDER_CURSED_R, BORDER_CURSED_G, BORDER_CURSED_B, BORDER_CURSED_ALPHA)
+    cursedBorderActive[tooltip] = true
+end
+
+local function ResetTooltipBorder(tooltip)
+    if cursedBorderActive[tooltip] then
+        tooltip:SetBackdropBorderColor(BORDER_DEFAULT_R, BORDER_DEFAULT_G, BORDER_DEFAULT_B, BORDER_DEFAULT_ALPHA)
+        cursedBorderActive[tooltip] = nil
+    end
+end
+
+-- ============================================================
 -- Tooltip hooking
 -- ============================================================
 
@@ -47,7 +74,10 @@ local function EnhanceTooltip(tooltip)
         end
     end
 
-    if not hasParagon then return end
+    if not hasParagon then
+        ResetTooltipBorder(tooltip)
+        return
+    end
 
     -- Second pass: colorize lines
     for i = 1, numLines do
@@ -71,10 +101,13 @@ local function EnhanceTooltip(tooltip)
         end
     end
 
-    -- Add extra warning line for cursed items
+    -- Apply purple border glow for cursed items
     if hasCursed then
+        SetCursedBorder(tooltip)
         tooltip:AddLine(" ")
         tooltip:AddLine(COLOR_CURSED_WARN .. "This item is cursed and soulbound." .. COLOR_RESET, 1, 0.267, 0.267, false)
+    else
+        ResetTooltipBorder(tooltip)
     end
 
     tooltip:Show()
@@ -84,10 +117,15 @@ end
 GameTooltip:HookScript("OnTooltipSetItem", function(self) EnhanceTooltip(self) end)
 ItemRefTooltip:HookScript("OnTooltipSetItem", function(self) EnhanceTooltip(self) end)
 
+-- Reset border when tooltip is cleared (non-cursed items, empty hover)
+GameTooltip:HookScript("OnTooltipCleared", function(self) ResetTooltipBorder(self) end)
+ItemRefTooltip:HookScript("OnTooltipCleared", function(self) ResetTooltipBorder(self) end)
+
 -- Hook shopping (comparison) tooltips
 for i = 1, 3 do
     local tip = _G["ShoppingTooltip" .. i]
     if tip then
         tip:HookScript("OnTooltipSetItem", function(self) EnhanceTooltip(self) end)
+        tip:HookScript("OnTooltipCleared", function(self) ResetTooltipBorder(self) end)
     end
 end
