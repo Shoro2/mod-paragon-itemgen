@@ -39,6 +39,46 @@ static bool   conf_BlockTrade      = true;
 static bool   conf_BlockMail       = true;
 
 // ============================================================
+// Stat name lookup for debug logging
+// ============================================================
+
+static char const* StatIndexToName(ParagonStatIndex idx)
+{
+    switch (idx)
+    {
+        case PSTAT_STAMINA:           return "Stamina";
+        case PSTAT_STRENGTH:          return "Strength";
+        case PSTAT_AGILITY:           return "Agility";
+        case PSTAT_INTELLECT:         return "Intellect";
+        case PSTAT_SPIRIT:            return "Spirit";
+        case PSTAT_DODGE_RATING:      return "Dodge";
+        case PSTAT_PARRY_RATING:      return "Parry";
+        case PSTAT_DEFENSE_RATING:    return "Defense";
+        case PSTAT_BLOCK_RATING:      return "Block";
+        case PSTAT_HIT_RATING:        return "Hit";
+        case PSTAT_CRIT_RATING:       return "Crit";
+        case PSTAT_HASTE_RATING:      return "Haste";
+        case PSTAT_EXPERTISE_RATING:  return "Expertise";
+        case PSTAT_ARMOR_PENETRATION: return "ArmorPen";
+        case PSTAT_SPELL_POWER:       return "SpellPower";
+        case PSTAT_ATTACK_POWER:      return "AttackPower";
+        case PSTAT_MANA_REGENERATION: return "ManaRegen";
+        default:                      return "Unknown";
+    }
+}
+
+static char const* RoleToName(ParagonRole role)
+{
+    switch (role)
+    {
+        case ROLE_TANK:   return "Tank";
+        case ROLE_DPS:    return "DPS";
+        case ROLE_HEALER: return "Healer";
+        default:          return "Unknown";
+    }
+}
+
+// ============================================================
 // Combat rating pools per role
 // ============================================================
 
@@ -99,9 +139,16 @@ static uint32 GetPlayerParagonLevel(Player* player)
         player->GetSession()->GetAccountId());
 
     if (!result)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: No paragon level found for account {}",
+            player->GetSession()->GetAccountId());
         return 0;
+    }
 
-    return (*result)[0].Get<uint32>();
+    uint32 level = (*result)[0].Get<uint32>();
+    LOG_DEBUG("module", "ParagonItemGen: Player {} (account {}) has paragon level {}",
+        player->GetName(), player->GetSession()->GetAccountId(), level);
+    return level;
 }
 
 struct PlayerRoleInfo
@@ -120,7 +167,11 @@ static PlayerRoleInfo GetPlayerRoleInfo(Player* player)
         player->GetGUID().GetCounter());
 
     if (!result)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: No role info found for character {} (guid {})",
+            player->GetName(), player->GetGUID().GetCounter());
         return info;
+    }
 
     info.role = static_cast<ParagonRole>((*result)[0].Get<uint8>());
     info.found = true;
@@ -139,6 +190,8 @@ static PlayerRoleInfo GetPlayerRoleInfo(Player* player)
     if (info.role >= ROLE_MAX)
         info.role = ROLE_DPS;
 
+    LOG_DEBUG("module", "ParagonItemGen: Player {} role={} mainStat={} (modVal={})",
+        player->GetName(), RoleToName(info.role), StatIndexToName(info.mainStat), modVal);
     return info;
 }
 
@@ -197,14 +250,29 @@ static bool IsEligibleItem(Item* item)
         return false;
 
     if (proto->Class != ITEM_CLASS_WEAPON && proto->Class != ITEM_CLASS_ARMOR)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: Item {} (entry {}) rejected - class {} is not weapon/armor",
+            item->GetGUID().GetCounter(), proto->ItemId, proto->Class);
         return false;
+    }
 
     if (proto->Quality < ITEM_QUALITY_UNCOMMON || proto->Quality > ITEM_QUALITY_LEGENDARY)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: Item {} (entry {}) rejected - quality {} not in range [{}, {}]",
+            item->GetGUID().GetCounter(), proto->ItemId, proto->Quality,
+            ITEM_QUALITY_UNCOMMON, ITEM_QUALITY_LEGENDARY);
         return false;
+    }
 
     if (proto->ItemLevel < conf_MinItemLevel)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: Item {} (entry {}) rejected - itemLevel {} < minItemLevel {}",
+            item->GetGUID().GetCounter(), proto->ItemId, proto->ItemLevel, conf_MinItemLevel);
         return false;
+    }
 
+    LOG_DEBUG("module", "ParagonItemGen: Item {} (entry {}) is eligible - class={}, quality={}, ilvl={}",
+        item->GetGUID().GetCounter(), proto->ItemId, proto->Class, proto->Quality, proto->ItemLevel);
     return true;
 }
 
@@ -221,6 +289,8 @@ static uint32 CalculateStatAmount(uint32 paragonLevel, uint8 quality)
     if (result < 1)
         result = 1;
 
+    LOG_DEBUG("module", "ParagonItemGen: CalculateStatAmount: paragonLevel={}, quality={}, scalingFactor={}, qualityMult={}, result={}",
+        paragonLevel, quality, conf_ScalingFactor, conf_QualityMult[quality], result);
     return result;
 }
 
@@ -228,7 +298,8 @@ static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 
 {
     if (!sSpellItemEnchantmentStore.LookupEntry(enchantId))
     {
-        LOG_ERROR("module", "ParagonItemGen: Enchantment ID {} not found", enchantId);
+        LOG_ERROR("module", "ParagonItemGen: Enchantment ID {} not found in DBC store! "
+            "Ensure spellitemenchantment_dbc entries are loaded.", enchantId);
         return;
     }
 
@@ -239,6 +310,9 @@ static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 
 
     if (item->IsEquipped())
         player->ApplyEnchantment(item, EnchantmentSlot(slot), true);
+
+    LOG_DEBUG("module", "ParagonItemGen: Applied enchantment {} to slot {} on item {} (entry {})",
+        enchantId, slot, item->GetGUID().GetCounter(), item->GetEntry());
 }
 
 // ============================================================
@@ -248,21 +322,38 @@ static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 
 static void ApplyParagonEnchantment(Player* player, Item* item)
 {
     if (!conf_Enable || !player || !item)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: ApplyParagonEnchantment early exit - enable={}, player={}, item={}",
+            conf_Enable, player != nullptr, item != nullptr);
         return;
+    }
+
+    LOG_DEBUG("module", "ParagonItemGen: Attempting enchantment for player {} on item entry {} (guid {})",
+        player->GetName(), item->GetEntry(), item->GetGUID().GetCounter());
 
     if (!IsEligibleItem(item))
         return;
 
     if (ItemHasParagonEnchantment(item))
+    {
+        LOG_DEBUG("module", "ParagonItemGen: Item {} already has paragon enchantment, skipping",
+            item->GetGUID().GetCounter());
         return;
+    }
 
     uint32 paragonLevel = GetPlayerParagonLevel(player);
     if (paragonLevel < conf_MinParagonLevel)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: Player {} paragon level {} < minimum {}, skipping",
+            player->GetName(), paragonLevel, conf_MinParagonLevel);
         return;
+    }
 
     PlayerRoleInfo roleInfo = GetPlayerRoleInfo(player);
     if (!roleInfo.found)
     {
+        LOG_DEBUG("module", "ParagonItemGen: Player {} has no role set, skipping",
+            player->GetName());
         ChatHandler(player->GetSession()).PSendSysMessage(
             "|cffff0000[Paragon]|r Set your role first with: .paragon role tank|dps|healer");
         return;
@@ -271,21 +362,29 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     uint32 statAmount = CalculateStatAmount(paragonLevel, item->GetTemplate()->Quality);
 
     // Slot 0 (7): Stamina - always
-    ApplySlotEnchantment(player, item, PARAGON_SLOT_STAMINA,
-        GetEnchantmentId(PSTAT_STAMINA, statAmount));
+    uint32 staEnchId = GetEnchantmentId(PSTAT_STAMINA, statAmount);
+    LOG_DEBUG("module", "ParagonItemGen: Slot {} (Stamina): enchantId={}, amount={}",
+        PARAGON_SLOT_STAMINA, staEnchId, statAmount);
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_STAMINA, staEnchId);
 
     // Slot 1 (8): Main stat - player choice
-    ApplySlotEnchantment(player, item, PARAGON_SLOT_MAINSTAT,
-        GetEnchantmentId(roleInfo.mainStat, statAmount));
+    uint32 mainEnchId = GetEnchantmentId(roleInfo.mainStat, statAmount);
+    LOG_DEBUG("module", "ParagonItemGen: Slot {} (MainStat={}): enchantId={}, amount={}",
+        PARAGON_SLOT_MAINSTAT, StatIndexToName(roleInfo.mainStat), mainEnchId, statAmount);
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_MAINSTAT, mainEnchId);
 
     // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
     ParagonStatIndex cr1, cr2;
     PickTwoRandomRatings(roleInfo.role, cr1, cr2);
 
-    ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING1,
-        GetEnchantmentId(cr1, statAmount));
-    ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING2,
-        GetEnchantmentId(cr2, statAmount));
+    uint32 cr1EnchId = GetEnchantmentId(cr1, statAmount);
+    uint32 cr2EnchId = GetEnchantmentId(cr2, statAmount);
+    LOG_DEBUG("module", "ParagonItemGen: Slot {} (CR1={}): enchantId={}, Slot {} (CR2={}): enchantId={}",
+        PARAGON_SLOT_COMBAT_RATING1, StatIndexToName(cr1), cr1EnchId,
+        PARAGON_SLOT_COMBAT_RATING2, StatIndexToName(cr2), cr2EnchId);
+
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING1, cr1EnchId);
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING2, cr2EnchId);
 
     // Slot 4 (11): Talent spell - TODO: placeholder for custom spells
     // Will be implemented when custom spells are created
@@ -297,6 +396,12 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         item->GetGUID().GetCounter(), paragonLevel,
         static_cast<uint8>(roleInfo.role), static_cast<uint8>(roleInfo.mainStat),
         static_cast<uint8>(cr1), static_cast<uint8>(cr2), statAmount);
+
+    LOG_INFO("module", "ParagonItemGen: Enhanced item {} (entry {}) for player {} - "
+        "PLevel={}, Role={}, MainStat={}, CR1={}, CR2={}, Amount={}",
+        item->GetGUID().GetCounter(), item->GetEntry(), player->GetName(),
+        paragonLevel, RoleToName(roleInfo.role), StatIndexToName(roleInfo.mainStat),
+        StatIndexToName(cr1), StatIndexToName(cr2), statAmount);
 
     ChatHandler(player->GetSession()).PSendSysMessage(
         "|cff00ff00[Paragon]|r Item enhanced with +{} stats (Paragon Level {}).",
@@ -310,22 +415,36 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
 class ParagonItemGenPlayer : public PlayerScript
 {
 public:
-    ParagonItemGenPlayer() : PlayerScript("ParagonItemGenPlayer") { }
+    ParagonItemGenPlayer() : PlayerScript("ParagonItemGenPlayer",
+    {
+        PLAYERHOOK_ON_LOOT_ITEM,
+        PLAYERHOOK_ON_CREATE_ITEM,
+        PLAYERHOOK_ON_QUEST_REWARD_ITEM,
+        PLAYERHOOK_ON_AFTER_STORE_OR_EQUIP_NEW_ITEM,
+        PLAYERHOOK_CAN_SET_TRADE_ITEM,
+        PLAYERHOOK_CAN_SEND_MAIL
+    }) { }
 
     void OnPlayerLootItem(Player* player, Item* item, uint32 /*count*/, ObjectGuid /*lootguid*/) override
     {
+        LOG_DEBUG("module", "ParagonItemGen: [OnLoot] Player {} looted item entry {} (conf_OnLoot={})",
+            player->GetName(), item ? item->GetEntry() : 0, conf_OnLoot);
         if (conf_OnLoot)
             ApplyParagonEnchantment(player, item);
     }
 
     void OnPlayerCreateItem(Player* player, Item* item, uint32 /*count*/) override
     {
+        LOG_DEBUG("module", "ParagonItemGen: [OnCreate] Player {} created item entry {} (conf_OnCreate={})",
+            player->GetName(), item ? item->GetEntry() : 0, conf_OnCreate);
         if (conf_OnCreate)
             ApplyParagonEnchantment(player, item);
     }
 
     void OnPlayerQuestRewardItem(Player* player, Item* item, uint32 /*count*/) override
     {
+        LOG_DEBUG("module", "ParagonItemGen: [OnQuest] Player {} quest reward item entry {} (conf_OnQuest={})",
+            player->GetName(), item ? item->GetEntry() : 0, conf_OnQuest);
         if (conf_OnQuest)
             ApplyParagonEnchantment(player, item);
     }
@@ -334,6 +453,8 @@ public:
         uint8 /*count*/, uint8 /*bag*/, uint8 /*slot*/, ItemTemplate const* /*pProto*/,
         Creature* /*pVendor*/, VendorItem const* /*crItem*/, bool /*bStore*/) override
     {
+        LOG_DEBUG("module", "ParagonItemGen: [OnVendor] Player {} vendor item entry {} (conf_OnVendor={})",
+            player->GetName(), item ? item->GetEntry() : 0, conf_OnVendor);
         if (conf_OnVendor)
             ApplyParagonEnchantment(player, item);
     }
@@ -361,6 +482,10 @@ public:
             return true;
 
         uint32 targetParagonLevel = GetPlayerParagonLevel(tradeTarget);
+
+        LOG_DEBUG("module", "ParagonItemGen: [Trade] Player {} -> {} item {} (itemPLevel={}, targetPLevel={})",
+            player->GetName(), tradeTarget->GetName(), tradedItem->GetEntry(),
+            itemParagonLevel, targetParagonLevel);
 
         if (targetParagonLevel < itemParagonLevel)
         {
@@ -403,6 +528,10 @@ public:
         if (charResult)
             receiverParagonLevel = (*charResult)[0].Get<uint32>();
 
+        LOG_DEBUG("module", "ParagonItemGen: [Mail] Player {} -> guid {} item {} (itemPLevel={}, receiverPLevel={})",
+            player->GetName(), receiverGuid.GetCounter(), item->GetEntry(),
+            itemParagonLevel, receiverParagonLevel);
+
         if (receiverParagonLevel < itemParagonLevel)
         {
             ChatHandler(player->GetSession()).PSendSysMessage(
@@ -424,7 +553,10 @@ public:
 class ParagonItemGenWorld : public WorldScript
 {
 public:
-    ParagonItemGenWorld() : WorldScript("ParagonItemGenWorld") { }
+    ParagonItemGenWorld() : WorldScript("ParagonItemGenWorld",
+    {
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD
+    }) { }
 
     void OnAfterConfigLoad(bool /*reload*/) override
     {
@@ -444,9 +576,12 @@ public:
         conf_QualityMult[4]  = sConfigMgr->GetOption<float>("ParagonItemGen.QualityMult.Epic", 1.0f);
         conf_QualityMult[5]  = sConfigMgr->GetOption<float>("ParagonItemGen.QualityMult.Legendary", 1.25f);
 
-        if (conf_Enable)
-            LOG_INFO("module", "ParagonItemGen: Loaded (Scaling={}, MinPLevel={}, MinIlvl={})",
-                conf_ScalingFactor, conf_MinParagonLevel, conf_MinItemLevel);
+        LOG_INFO("module", "ParagonItemGen: Config loaded - Enable={}, OnLoot={}, OnCreate={}, OnQuest={}, OnVendor={}, "
+            "Scaling={}, MinPLevel={}, MinIlvl={}, BlockTrade={}, BlockMail={}, "
+            "QMult=[Uncommon={}, Rare={}, Epic={}, Legendary={}]",
+            conf_Enable, conf_OnLoot, conf_OnCreate, conf_OnQuest, conf_OnVendor,
+            conf_ScalingFactor, conf_MinParagonLevel, conf_MinItemLevel, conf_BlockTrade, conf_BlockMail,
+            conf_QualityMult[2], conf_QualityMult[3], conf_QualityMult[4], conf_QualityMult[5]);
     }
 };
 
