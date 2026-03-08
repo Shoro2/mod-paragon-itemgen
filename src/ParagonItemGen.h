@@ -31,6 +31,15 @@ constexpr uint8 PARAGON_SLOT_COMBAT_RATING1 = 9;  // PROP_ENCHANTMENT_SLOT_2
 constexpr uint8 PARAGON_SLOT_COMBAT_RATING2 = 10; // PROP_ENCHANTMENT_SLOT_3
 constexpr uint8 PARAGON_SLOT_TALENT_SPELL  = 11; // PROP_ENCHANTMENT_SLOT_4
 
+// Passive spell enchantment ID range (spellitemenchantment_dbc)
+constexpr uint32 PARAGON_PASSIVE_ENCHANT_MIN = 950001;
+constexpr uint32 PARAGON_PASSIVE_ENCHANT_MAX = 950099;
+
+// Role bitmask for passive spell pool filtering
+constexpr uint8 PARAGON_ROLE_MASK_TANK   = 1;
+constexpr uint8 PARAGON_ROLE_MASK_DPS    = 2;
+constexpr uint8 PARAGON_ROLE_MASK_HEALER = 4;
+
 // Stat indices (maps to enchantment IDs)
 enum ParagonStatIndex : uint8
 {

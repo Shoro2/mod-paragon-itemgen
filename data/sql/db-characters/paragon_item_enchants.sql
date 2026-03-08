@@ -36,3 +36,15 @@ SET @sqlstmt := IF(@exist = 0,
 PREPARE stmt FROM @sqlstmt;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Migration: add passiveSpellEnchantId column for passive spell tracking
+SET @exist2 := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = 'character_paragon_item'
+  AND COLUMN_NAME = 'passiveSpellEnchantId');
+SET @sqlstmt2 := IF(@exist2 = 0,
+  'ALTER TABLE `character_paragon_item` ADD COLUMN `passiveSpellEnchantId` int unsigned NOT NULL DEFAULT 0 COMMENT ''spellitemenchantment_dbc ID for passive effect'' AFTER `cursed`',
+  'SELECT 1');
+PREPARE stmt2 FROM @sqlstmt2;
+EXECUTE stmt2;
+DEALLOCATE PREPARE stmt2;

@@ -1,12 +1,17 @@
 /*
  * Paragon Item Scaling Module v2
  *
- * Applies 4 enchantment slots to items based on paragon level:
+ * Applies 5 enchantment slots to items based on paragon level:
  *   Slot 7:  Stamina (always)
  *   Slot 8:  Main stat (player-chosen: Str/Agi/Int/Spi)
  *   Slot 9:  Random combat rating (role-dependent pool)
  *   Slot 10: Random combat rating (role-dependent pool, no duplicate)
- *   Slot 11: Talent spell (TODO: placeholder for custom spells)
+ *   Slot 11: Passive spell effect (role-filtered, weighted random from pool)
+ *            OR "Cursed" marker for cursed items
+ *
+ * Passive spell effects include: stat % buffs, combat rating boosts,
+ * damage/healing % increases, and proc-on-hit effects.
+ * The pool is loaded from paragon_passive_spell_pool (world DB) on startup.
  *
  * Trade/Mail restrictions prevent passing paragon items to lower-level players.
  * TODO: AH restriction needs a core-level hook (CanListAuction).
@@ -22,6 +27,8 @@
 #include "DBCStores.h"
 #include "ObjectGuid.h"
 #include <random>
+#include <vector>
+#include <mutex>
 
 // ============================================================
 // Configuration
@@ -40,6 +47,27 @@ static bool   conf_BlockMail       = true;
 static float  conf_CursedChance    = 50.0f;
 static float  conf_CursedMultiplier = 1.5f;
 static uint32 conf_CursedVisualKit = 5765;
+static bool   conf_PassiveSpellEnable  = true;
+static float  conf_PassiveSpellChance  = 100.0f;
+
+// ============================================================
+// Passive Spell Pool
+// ============================================================
+
+struct PassiveSpellEntry
+{
+    uint32 enchantmentId;
+    uint32 spellId;
+    std::string name;
+    uint8  category;
+    uint8  roleMask;
+    uint32 weight;
+    uint32 minParagonLevel;
+    uint32 minItemLevel;
+};
+
+static std::vector<PassiveSpellEntry> sPassiveSpellPool;
+static std::mutex sPassiveSpellPoolMutex;
 
 // ============================================================
 // Stat name lookup for debug logging
@@ -119,8 +147,20 @@ static uint32 GetEnchantmentId(ParagonStatIndex statIndex, uint32 amount)
 
 static bool IsParagonEnchantment(uint32 enchantId)
 {
-    return enchantId > PARAGON_ENCHANT_BASE_ID &&
-           enchantId <= PARAGON_ENCHANT_BASE_ID + (PARAGON_ENCHANT_MAX_STAT_INDEX + 1) * PARAGON_ENCHANT_STAT_STRIDE;
+    // Stat enchantments (900001-917000)
+    if (enchantId > PARAGON_ENCHANT_BASE_ID &&
+        enchantId <= PARAGON_ENCHANT_BASE_ID + (PARAGON_ENCHANT_MAX_STAT_INDEX + 1) * PARAGON_ENCHANT_STAT_STRIDE)
+        return true;
+
+    // Cursed marker (920001)
+    if (enchantId == PARAGON_ENCHANT_CURSED_ID)
+        return true;
+
+    // Passive spell enchantments (950001-950099)
+    if (enchantId >= PARAGON_PASSIVE_ENCHANT_MIN && enchantId <= PARAGON_PASSIVE_ENCHANT_MAX)
+        return true;
+
+    return false;
 }
 
 static bool ItemHasParagonEnchantment(Item* item)
@@ -241,6 +281,134 @@ static void PickTwoRandomRatings(ParagonRole role, ParagonStatIndex& out1, Parag
         idx2 = dist1(rng);
     } while (idx2 == idx1);
     out2 = pool[idx2];
+}
+
+// ============================================================
+// Passive Spell Pool: Load and Roll
+// ============================================================
+
+static void LoadPassiveSpellPool()
+{
+    std::lock_guard<std::mutex> lock(sPassiveSpellPoolMutex);
+    sPassiveSpellPool.clear();
+
+    QueryResult result = WorldDatabase.Query(
+        "SELECT `enchantmentId`, `spellId`, `name`, `category`, `roleMask`, "
+        "`weight`, `minParagonLevel`, `minItemLevel` "
+        "FROM `paragon_passive_spell_pool` ORDER BY `id`");
+
+    if (!result)
+    {
+        LOG_WARN("module", "ParagonItemGen: paragon_passive_spell_pool table is empty or missing!");
+        return;
+    }
+
+    do
+    {
+        Field* fields = result->Fetch();
+        PassiveSpellEntry entry;
+        entry.enchantmentId  = fields[0].Get<uint32>();
+        entry.spellId        = fields[1].Get<uint32>();
+        entry.name           = fields[2].Get<std::string>();
+        entry.category       = fields[3].Get<uint8>();
+        entry.roleMask       = fields[4].Get<uint8>();
+        entry.weight         = fields[5].Get<uint32>();
+        entry.minParagonLevel = fields[6].Get<uint32>();
+        entry.minItemLevel   = fields[7].Get<uint32>();
+
+        if (!sSpellItemEnchantmentStore.LookupEntry(entry.enchantmentId))
+        {
+            LOG_ERROR("module", "ParagonItemGen: Passive spell pool entry with enchantmentId {} "
+                "not found in spellitemenchantment_dbc, skipping.", entry.enchantmentId);
+            continue;
+        }
+
+        sPassiveSpellPool.push_back(entry);
+    } while (result->NextRow());
+
+    LOG_INFO("module", "ParagonItemGen: Loaded {} passive spell pool entries.", sPassiveSpellPool.size());
+}
+
+static uint8 RoleMaskFromRole(ParagonRole role)
+{
+    switch (role)
+    {
+        case ROLE_TANK:   return PARAGON_ROLE_MASK_TANK;
+        case ROLE_DPS:    return PARAGON_ROLE_MASK_DPS;
+        case ROLE_HEALER: return PARAGON_ROLE_MASK_HEALER;
+        default:          return PARAGON_ROLE_MASK_DPS;
+    }
+}
+
+static bool IsPassiveSpellEnchantment(uint32 enchantId)
+{
+    return enchantId >= PARAGON_PASSIVE_ENCHANT_MIN &&
+           enchantId <= PARAGON_PASSIVE_ENCHANT_MAX;
+}
+
+// Returns 0 if no eligible passive spell found
+static uint32 RollPassiveSpellEnchantment(ParagonRole role, uint32 paragonLevel, uint32 itemLevel)
+{
+    if (!conf_PassiveSpellEnable || sPassiveSpellPool.empty())
+        return 0;
+
+    // Check if this item gets a passive spell at all
+    if (conf_PassiveSpellChance < 100.0f)
+    {
+        static thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_real_distribution<float> dist(0.0f, 100.0f);
+        if (dist(rng) >= conf_PassiveSpellChance)
+            return 0;
+    }
+
+    uint8 roleBit = RoleMaskFromRole(role);
+
+    // Build eligible list with weights
+    std::vector<std::pair<uint32, uint32>> eligible; // enchantmentId, weight
+    uint32 totalWeight = 0;
+
+    {
+        std::lock_guard<std::mutex> lock(sPassiveSpellPoolMutex);
+        for (auto const& entry : sPassiveSpellPool)
+        {
+            if (!(entry.roleMask & roleBit))
+                continue;
+            if (paragonLevel < entry.minParagonLevel)
+                continue;
+            if (itemLevel < entry.minItemLevel)
+                continue;
+
+            eligible.push_back({ entry.enchantmentId, entry.weight });
+            totalWeight += entry.weight;
+        }
+    }
+
+    if (eligible.empty() || totalWeight == 0)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: No eligible passive spells for role={}, pLevel={}, iLevel={}",
+            RoleToName(role), paragonLevel, itemLevel);
+        return 0;
+    }
+
+    // Weighted random selection
+    static thread_local std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<uint32> dist(1, totalWeight);
+    uint32 roll = dist(rng);
+
+    uint32 cumulative = 0;
+    for (auto const& [enchId, weight] : eligible)
+    {
+        cumulative += weight;
+        if (roll <= cumulative)
+        {
+            LOG_DEBUG("module", "ParagonItemGen: Rolled passive spell enchantment {} (roll={}/{})",
+                enchId, roll, totalWeight);
+            return enchId;
+        }
+    }
+
+    // Fallback (shouldn't happen)
+    return eligible.back().first;
 }
 
 static bool IsEligibleItem(Item* item)
@@ -448,12 +616,12 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING1, cr1EnchId);
     ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING2, cr2EnchId);
 
-    // Slot 4 (11): Talent spell - TODO: placeholder for custom spells
-    // Will be implemented when custom spells are created
+    // Slot 4 (11): Passive spell effect OR cursed marker
+    uint32 passiveEnchantId = 0;
 
-    // Cursed items: set slot 11 marker, soulbound, shadow visual
     if (isCursed)
     {
+        // Cursed items: set slot 11 marker, soulbound, shadow visual
         ApplySlotEnchantment(player, item, PARAGON_SLOT_TALENT_SPELL, PARAGON_ENCHANT_CURSED_ID);
 
         if (!item->IsSoulBound())
@@ -462,18 +630,32 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         // Play shadow visual on the player
         player->SendPlaySpellVisual(conf_CursedVisualKit);
     }
+    else
+    {
+        // Normal items: roll a passive spell effect
+        passiveEnchantId = RollPassiveSpellEnchantment(
+            roleInfo.role, paragonLevel, item->GetTemplate()->ItemLevel);
+
+        if (passiveEnchantId)
+        {
+            ApplySlotEnchantment(player, item, PARAGON_SLOT_TALENT_SPELL, passiveEnchantId);
+            LOG_DEBUG("module", "ParagonItemGen: Applied passive spell enchantment {} to item {} for player {}",
+                passiveEnchantId, item->GetGUID().GetCounter(), player->GetName());
+        }
+    }
 
     // Use cursed amount for DB tracking when cursed, max otherwise
     uint32 dbStatAmount = isCursed ? staAmount : maxStatAmount;
 
     // Track in DB for trade restrictions
     CharacterDatabase.Execute(
-        "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, role, mainStat, combatRating1, combatRating2, statAmount, cursed) "
-        "VALUES ({}, {}, {}, {}, {}, {}, {}, {})",
+        "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, role, mainStat, "
+        "combatRating1, combatRating2, statAmount, cursed, passiveSpellEnchantId) "
+        "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})",
         item->GetGUID().GetCounter(), paragonLevel,
         static_cast<uint8>(roleInfo.role), static_cast<uint8>(roleInfo.mainStat),
         static_cast<uint8>(cr1), static_cast<uint8>(cr2), dbStatAmount,
-        isCursed ? 1 : 0);
+        isCursed ? 1 : 0, passiveEnchantId);
 
     LOG_INFO("module", "ParagonItemGen: Enhanced item {} (entry {}) for player {} - "
         "PLevel={}, Role={}, MainStat={}, CR1={}, CR2={}, Sta={}, Main={}, CR1Amt={}, CR2Amt={}, Cursed={}",
@@ -487,6 +669,25 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         ChatHandler(player->GetSession()).PSendSysMessage(
             "|cff8b00ff[Paragon]|r |cffff0000CURSED!|r Item enhanced with +{} stats ({}%% of max, Paragon Level {}).",
             staAmount, static_cast<int>(conf_CursedMultiplier * 100), paragonLevel);
+    }
+    else if (passiveEnchantId)
+    {
+        // Find the name of the passive spell from the pool
+        std::string passiveName = "Unknown";
+        {
+            std::lock_guard<std::mutex> lock(sPassiveSpellPoolMutex);
+            for (auto const& entry : sPassiveSpellPool)
+            {
+                if (entry.enchantmentId == passiveEnchantId)
+                {
+                    passiveName = entry.name;
+                    break;
+                }
+            }
+        }
+        ChatHandler(player->GetSession()).PSendSysMessage(
+            "|cff00ff00[Paragon]|r Item enhanced (Paragon Level {}). Sta: +{}, Main: +{}, CR1: +{}, CR2: +{} | Passive: |cffa335ee{}|r",
+            paragonLevel, staAmount, mainAmount, cr1Amount, cr2Amount, passiveName);
     }
     else
     {
@@ -643,11 +844,21 @@ class ParagonItemGenWorld : public WorldScript
 public:
     ParagonItemGenWorld() : WorldScript("ParagonItemGenWorld",
     {
-        WORLDHOOK_ON_AFTER_CONFIG_LOAD
+        WORLDHOOK_ON_AFTER_CONFIG_LOAD,
+        WORLDHOOK_ON_STARTUP
     }) { }
 
-    void OnAfterConfigLoad(bool /*reload*/) override
+    void OnStartup() override
     {
+        LoadPassiveSpellPool();
+    }
+
+    void OnAfterConfigLoad(bool reload) override
+    {
+        // Reload the passive spell pool on config reload
+        if (reload)
+            LoadPassiveSpellPool();
+
         conf_Enable          = sConfigMgr->GetOption<bool>("ParagonItemGen.Enable", true);
         conf_OnLoot          = sConfigMgr->GetOption<bool>("ParagonItemGen.OnLoot", true);
         conf_OnCreate        = sConfigMgr->GetOption<bool>("ParagonItemGen.OnCreate", true);
@@ -668,14 +879,19 @@ public:
         conf_CursedMultiplier = sConfigMgr->GetOption<float>("ParagonItemGen.CursedMultiplier", 1.5f);
         conf_CursedVisualKit  = sConfigMgr->GetOption<uint32>("ParagonItemGen.CursedVisualKit", 5765);
 
+        conf_PassiveSpellEnable = sConfigMgr->GetOption<bool>("ParagonItemGen.PassiveSpell.Enable", true);
+        conf_PassiveSpellChance = sConfigMgr->GetOption<float>("ParagonItemGen.PassiveSpell.Chance", 100.0f);
+
         LOG_INFO("module", "ParagonItemGen: Config loaded - Enable={}, OnLoot={}, OnCreate={}, OnQuest={}, OnVendor={}, "
             "Scaling={}, MinPLevel={}, MinIlvl={}, BlockTrade={}, BlockMail={}, "
             "QMult=[Uncommon={}, Rare={}, Epic={}, Legendary={}], "
-            "CursedChance={}%, CursedMult={}x, CursedVisual={}",
+            "CursedChance={}%, CursedMult={}x, CursedVisual={}, "
+            "PassiveSpell={}, PassiveChance={}%",
             conf_Enable, conf_OnLoot, conf_OnCreate, conf_OnQuest, conf_OnVendor,
             conf_ScalingFactor, conf_MinParagonLevel, conf_MinItemLevel, conf_BlockTrade, conf_BlockMail,
             conf_QualityMult[2], conf_QualityMult[3], conf_QualityMult[4], conf_QualityMult[5],
-            conf_CursedChance, conf_CursedMultiplier, conf_CursedVisualKit);
+            conf_CursedChance, conf_CursedMultiplier, conf_CursedVisualKit,
+            conf_PassiveSpellEnable, conf_PassiveSpellChance);
     }
 };
 

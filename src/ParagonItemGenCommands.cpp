@@ -157,6 +157,8 @@ static bool HandleParagonInfoCommand(ChatHandler* handler, Tail /*args*/)
         default:          poolDesc = "Unknown"; break;
     }
     handler->PSendSysMessage("  Combat Rating Pool: |cffffffff{}|r", poolDesc);
+    handler->PSendSysMessage("  Passive Spell: |cffffffff{}|r",
+        "Rolled per item (role-filtered from spell pool)");
 
     return true;
 }
