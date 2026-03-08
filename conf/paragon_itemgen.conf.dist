@@ -3,45 +3,55 @@
 ###############################################################################
 # PARAGON ITEM SCALING MODULE
 #
-# Applies bonus enchantments to weapons and armor based on the player's
-# Paragon level. Stats are chosen based on class/spec (talent tree).
+# Applies bonus enchantments to weapons/armor based on player Paragon level.
 #
-# Items keep their stats permanently. Changing spec only affects NEW items.
+# Item Enchantment Slots:
+#   Slot 0: Stamina (always applied)
+#   Slot 1: Main stat (player choice: Str/Agi/Int/Spi)
+#   Slot 2: Random combat rating (from role-based pool)
+#   Slot 3: Random combat rating (from role-based pool, no duplicate)
+#   Slot 4: Talent spell (TODO: placeholder for custom spells)
 #
-# Trade/Mail restrictions prevent high-paragon players from passing
-# overpowered items to low-paragon players.
+# Roles: Tank, DPS, Healer
+#   Tank pool:   Dodge, Parry, Defense, Block, Hit, Expertise
+#   DPS pool:    Crit, Haste, Hit, ArmorPen, Expertise, AP, SP
+#   Healer pool: Crit, Haste, Spell Power, MP5
+#
+# Player commands:
+#   .paragon role tank|dps|healer  (rested area only)
+#   .paragon stat str|agi|int|spi  (rested area only)
+#   .paragon info
+#
+# Items keep their stats permanently. Changing role/stat only affects NEW items.
+# Trade/Mail to lower-paragon players is blocked.
 ###############################################################################
 
-# Enable/disable the module entirely
+# Enable/disable the module
 ParagonItemGen.Enable = 1
 
-# Which item sources get paragon enchantments
+# Item sources that receive paragon enchantments
 ParagonItemGen.OnLoot   = 1
 ParagonItemGen.OnCreate = 1
 ParagonItemGen.OnQuest  = 1
 ParagonItemGen.OnVendor = 1
 
-# Scaling formula: statAmount = ceil(paragonLevel * ScalingFactor * QualityMultiplier)
-# At ScalingFactor=0.5 and Paragon Level 20:
+# Scaling formula: statAmount = ceil(paragonLevel * ScalingFactor * QualityMult)
+# Example at Paragon Level 20:
 #   Uncommon: +5 per stat | Rare: +8 | Epic: +10 | Legendary: +13
 ParagonItemGen.ScalingFactor = 0.5
 
-# Quality multipliers (higher quality = stronger paragon bonus)
+# Quality multipliers
 ParagonItemGen.QualityMult.Uncommon  = 0.5
 ParagonItemGen.QualityMult.Rare      = 0.75
 ParagonItemGen.QualityMult.Epic      = 1.0
 ParagonItemGen.QualityMult.Legendary = 1.25
 
-# Minimum paragon level required for items to receive enchantments
+# Minimum paragon level required for enchantments
 ParagonItemGen.MinParagonLevel = 1
 
-# Minimum item level required (items below this are not enchanted)
+# Minimum item level required
 ParagonItemGen.MinItemLevel = 150
 
-# Trade/transfer restrictions for paragon-enchanted items
-# BlockTrade: prevent trading to players with lower paragon level
-# BlockMail:  prevent mailing to players with lower paragon level
-# BlockAuction: prevent listing paragon-enchanted items on AH (TODO)
-ParagonItemGen.BlockTrade   = 1
-ParagonItemGen.BlockMail    = 1
-ParagonItemGen.BlockAuction = 1
+# Transfer restrictions
+ParagonItemGen.BlockTrade = 1
+ParagonItemGen.BlockMail  = 1

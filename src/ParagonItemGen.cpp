@@ -1,27 +1,15 @@
 /*
- * Paragon Item Scaling Module
- * Applies bonus enchantments to items based on the player's Paragon level.
+ * Paragon Item Scaling Module v2
  *
- * Stat profiles are determined by class + talent spec:
- *   STR_MELEE:  Arms/Fury Warrior, Ret Paladin, Frost/Unholy DK
- *   AGI_MELEE:  Rogue, Enhance Shaman, Feral Druid (cat)
- *   AGI_RANGED: Hunter
- *   INT_CASTER: Mage, Warlock, Shadow Priest, Ele Shaman, Balance Druid
- *   INT_HEALER: Holy/Disc Priest, Resto Shaman, Resto Druid, Holy Paladin
- *   STR_TANK:   Prot Warrior, Prot Paladin, Blood DK
- *   AGI_TANK:   Feral Druid (bear) - defaults to AGI_MELEE for now
+ * Applies 4 enchantment slots to items based on paragon level:
+ *   Slot 7:  Stamina (always)
+ *   Slot 8:  Main stat (player-chosen: Str/Agi/Int/Spi)
+ *   Slot 9:  Random combat rating (role-dependent pool)
+ *   Slot 10: Random combat rating (role-dependent pool, no duplicate)
+ *   Slot 11: Talent spell (TODO: placeholder for custom spells)
  *
- * Scaling formula:
- *   statAmount = ceil(paragonLevel * scalingFactor * qualityMultiplier)
- *   Capped at PARAGON_ENCHANT_MAX_AMOUNT (200)
- *
- * Trade/Mail restrictions:
- *   Items with paragon enchantments track the paragon level they were created at.
- *   Trading/mailing to players with a LOWER paragon level is blocked.
- *
- * TODO: AH restriction - AzerothCore has no CanListAuction hook.
- *       Options: (1) core patch adding a hook, (2) mark items soulbound,
- *       (3) use OnAuctionAdd to cancel and return the item.
+ * Trade/Mail restrictions prevent passing paragon items to lower-level players.
+ * TODO: AH restriction needs a core-level hook (CanListAuction).
  */
 
 #include "ParagonItemGen.h"
@@ -33,61 +21,76 @@
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
 #include "ObjectGuid.h"
+#include <random>
 
 // ============================================================
-// Configuration (loaded from .conf after world startup)
+// Configuration
 // ============================================================
-static bool  conf_Enable          = true;
-static bool  conf_OnLoot          = true;
-static bool  conf_OnCreate        = true;
-static bool  conf_OnQuest         = true;
-static bool  conf_OnVendor        = true;
-static float conf_ScalingFactor   = 0.5f;
-static float conf_QualityMult[6]  = { 0.0f, 0.0f, 0.5f, 0.75f, 1.0f, 1.25f };
-// quality indices:                   poor  normal uncomm  rare  epic  legendary
+static bool   conf_Enable          = true;
+static bool   conf_OnLoot          = true;
+static bool   conf_OnCreate        = true;
+static bool   conf_OnQuest         = true;
+static bool   conf_OnVendor        = true;
+static float  conf_ScalingFactor   = 0.5f;
+static float  conf_QualityMult[6]  = { 0.0f, 0.0f, 0.5f, 0.75f, 1.0f, 1.25f };
 static uint32 conf_MinParagonLevel = 1;
 static uint32 conf_MinItemLevel    = 150;
-static bool  conf_BlockTrade      = true;
-static bool  conf_BlockMail       = true;
+static bool   conf_BlockTrade      = true;
+static bool   conf_BlockMail       = true;
 
 // ============================================================
-// Spec-to-profile mapping
-// Index: [classId][talentTreeTab]
+// Combat rating pools per role
 // ============================================================
-// Class IDs: 1=Warrior 2=Paladin 3=Hunter 4=Rogue 5=Priest
-//            6=DK 7=Shaman 8=Mage 9=Warlock 11=Druid
-// Tab 0/1/2 correspond to the 3 talent trees per class
-static ParagonStatProfile const CLASS_SPEC_PROFILE[12][3] =
-{
-    // 0: unused
-    { PROFILE_STR_MELEE, PROFILE_STR_MELEE, PROFILE_STR_MELEE },
-    // 1: Warrior - Arms(0)/Fury(1)/Prot(2)
-    { PROFILE_STR_MELEE, PROFILE_STR_MELEE, PROFILE_STR_TANK },
-    // 2: Paladin - Holy(0)/Prot(1)/Ret(2)
-    { PROFILE_INT_HEALER, PROFILE_STR_TANK, PROFILE_STR_MELEE },
-    // 3: Hunter - BM(0)/MM(1)/Surv(2)
-    { PROFILE_AGI_RANGED, PROFILE_AGI_RANGED, PROFILE_AGI_RANGED },
-    // 4: Rogue - Assassin(0)/Combat(1)/Sub(2)
-    { PROFILE_AGI_MELEE, PROFILE_AGI_MELEE, PROFILE_AGI_MELEE },
-    // 5: Priest - Disc(0)/Holy(1)/Shadow(2)
-    { PROFILE_INT_HEALER, PROFILE_INT_HEALER, PROFILE_INT_CASTER },
-    // 6: Death Knight - Blood(0)/Frost(1)/Unholy(2)
-    { PROFILE_STR_TANK, PROFILE_STR_MELEE, PROFILE_STR_MELEE },
-    // 7: Shaman - Ele(0)/Enhance(1)/Resto(2)
-    { PROFILE_INT_CASTER, PROFILE_AGI_MELEE, PROFILE_INT_HEALER },
-    // 8: Mage - Arcane(0)/Fire(1)/Frost(2)
-    { PROFILE_INT_CASTER, PROFILE_INT_CASTER, PROFILE_INT_CASTER },
-    // 9: Warlock - Aff(0)/Demo(1)/Destro(2)
-    { PROFILE_INT_CASTER, PROFILE_INT_CASTER, PROFILE_INT_CASTER },
-    // 10: unused
-    { PROFILE_STR_MELEE, PROFILE_STR_MELEE, PROFILE_STR_MELEE },
-    // 11: Druid - Balance(0)/Feral(1)/Resto(2)
-    { PROFILE_INT_CASTER, PROFILE_AGI_MELEE, PROFILE_INT_HEALER },
+
+static ParagonStatIndex const TANK_COMBAT_RATINGS[] = {
+    PSTAT_DODGE_RATING, PSTAT_PARRY_RATING, PSTAT_DEFENSE_RATING,
+    PSTAT_BLOCK_RATING, PSTAT_HIT_RATING, PSTAT_EXPERTISE_RATING
 };
+static constexpr uint8 TANK_COMBAT_RATINGS_COUNT = 6;
+
+static ParagonStatIndex const DPS_COMBAT_RATINGS[] = {
+    PSTAT_CRIT_RATING, PSTAT_HASTE_RATING, PSTAT_HIT_RATING,
+    PSTAT_ARMOR_PENETRATION, PSTAT_EXPERTISE_RATING, PSTAT_ATTACK_POWER,
+    PSTAT_SPELL_POWER
+};
+static constexpr uint8 DPS_COMBAT_RATINGS_COUNT = 7;
+
+static ParagonStatIndex const HEALER_COMBAT_RATINGS[] = {
+    PSTAT_CRIT_RATING, PSTAT_HASTE_RATING, PSTAT_SPELL_POWER,
+    PSTAT_MANA_REGENERATION
+};
+static constexpr uint8 HEALER_COMBAT_RATINGS_COUNT = 4;
 
 // ============================================================
-// Helper functions
+// Helpers
 // ============================================================
+
+static uint32 GetEnchantmentId(ParagonStatIndex statIndex, uint32 amount)
+{
+    if (amount > PARAGON_ENCHANT_MAX_AMOUNT)
+        amount = PARAGON_ENCHANT_MAX_AMOUNT;
+    if (amount < 1)
+        amount = 1;
+    return PARAGON_ENCHANT_BASE_ID + static_cast<uint32>(statIndex) * PARAGON_ENCHANT_STAT_STRIDE + amount;
+}
+
+static bool IsParagonEnchantment(uint32 enchantId)
+{
+    return enchantId > PARAGON_ENCHANT_BASE_ID &&
+           enchantId <= PARAGON_ENCHANT_BASE_ID + (PARAGON_ENCHANT_MAX_STAT_INDEX + 1) * PARAGON_ENCHANT_STAT_STRIDE;
+}
+
+static bool ItemHasParagonEnchantment(Item* item)
+{
+    // Check if any of our 5 slots have a paragon enchantment
+    for (uint8 slot = PARAGON_SLOT_STAMINA; slot <= PARAGON_SLOT_TALENT_SPELL; ++slot)
+    {
+        uint32 enchId = item->GetEnchantmentId(EnchantmentSlot(slot));
+        if (IsParagonEnchantment(enchId))
+            return true;
+    }
+    return false;
+}
 
 static uint32 GetPlayerParagonLevel(Player* player)
 {
@@ -101,17 +104,87 @@ static uint32 GetPlayerParagonLevel(Player* player)
     return (*result)[0].Get<uint32>();
 }
 
-static ParagonStatProfile GetPlayerProfile(Player* player)
+struct PlayerRoleInfo
 {
-    uint8 classId = player->getClass();
-    if (classId >= 12)
-        return PROFILE_STR_MELEE;
+    ParagonRole role;
+    ParagonStatIndex mainStat;
+    bool found;
+};
 
-    uint8 talentTree = player->GetMostPointsTalentTree();
-    if (talentTree > 2)
-        talentTree = 0;
+static PlayerRoleInfo GetPlayerRoleInfo(Player* player)
+{
+    PlayerRoleInfo info = { ROLE_DPS, PSTAT_STRENGTH, false };
 
-    return CLASS_SPEC_PROFILE[classId][talentTree];
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT role, mainStat FROM character_paragon_role WHERE characterID = {}",
+        player->GetGUID().GetCounter());
+
+    if (!result)
+        return info;
+
+    info.role = static_cast<ParagonRole>((*result)[0].Get<uint8>());
+    info.found = true;
+
+    // Convert ITEM_MOD value back to ParagonStatIndex
+    uint8 modVal = (*result)[1].Get<uint8>();
+    switch (modVal)
+    {
+        case 4:  info.mainStat = PSTAT_STRENGTH;  break;
+        case 3:  info.mainStat = PSTAT_AGILITY;   break;
+        case 5:  info.mainStat = PSTAT_INTELLECT;  break;
+        case 6:  info.mainStat = PSTAT_SPIRIT;     break;
+        default: info.mainStat = PSTAT_STRENGTH;   break;
+    }
+
+    if (info.role >= ROLE_MAX)
+        info.role = ROLE_DPS;
+
+    return info;
+}
+
+static ParagonStatIndex const* GetCombatRatingPool(ParagonRole role, uint8& outCount)
+{
+    switch (role)
+    {
+        case ROLE_TANK:
+            outCount = TANK_COMBAT_RATINGS_COUNT;
+            return TANK_COMBAT_RATINGS;
+        case ROLE_DPS:
+            outCount = DPS_COMBAT_RATINGS_COUNT;
+            return DPS_COMBAT_RATINGS;
+        case ROLE_HEALER:
+            outCount = HEALER_COMBAT_RATINGS_COUNT;
+            return HEALER_COMBAT_RATINGS;
+        default:
+            outCount = DPS_COMBAT_RATINGS_COUNT;
+            return DPS_COMBAT_RATINGS;
+    }
+}
+
+static void PickTwoRandomRatings(ParagonRole role, ParagonStatIndex& out1, ParagonStatIndex& out2)
+{
+    uint8 poolSize = 0;
+    ParagonStatIndex const* pool = GetCombatRatingPool(role, poolSize);
+
+    // Thread-local RNG
+    static thread_local std::mt19937 rng(std::random_device{}());
+
+    std::uniform_int_distribution<uint8> dist1(0, poolSize - 1);
+    uint8 idx1 = dist1(rng);
+    out1 = pool[idx1];
+
+    // Pick second, different from first
+    if (poolSize <= 1)
+    {
+        out2 = out1;
+        return;
+    }
+
+    uint8 idx2;
+    do {
+        idx2 = dist1(rng);
+    } while (idx2 == idx1);
+    out2 = pool[idx2];
 }
 
 static bool IsEligibleItem(Item* item)
@@ -123,15 +196,12 @@ static bool IsEligibleItem(Item* item)
     if (!proto)
         return false;
 
-    // Only weapons (class 2) and armor (class 4)
     if (proto->Class != ITEM_CLASS_WEAPON && proto->Class != ITEM_CLASS_ARMOR)
         return false;
 
-    // Quality filter: uncommon(2) through legendary(5)
     if (proto->Quality < ITEM_QUALITY_UNCOMMON || proto->Quality > ITEM_QUALITY_LEGENDARY)
         return false;
 
-    // Item level minimum
     if (proto->ItemLevel < conf_MinItemLevel)
         return false;
 
@@ -154,25 +224,25 @@ static uint32 CalculateStatAmount(uint32 paragonLevel, uint8 quality)
     return result;
 }
 
-static uint32 GetEnchantmentId(ParagonStatProfile profile, uint32 amount)
+static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 enchantId)
 {
-    return PARAGON_ENCHANT_BASE_ID + static_cast<uint32>(profile) * PARAGON_ENCHANT_PROFILE_STRIDE + amount;
-}
+    if (!sSpellItemEnchantmentStore.LookupEntry(enchantId))
+    {
+        LOG_ERROR("module", "ParagonItemGen: Enchantment ID {} not found", enchantId);
+        return;
+    }
 
-static bool IsParagonEnchantment(uint32 enchantId)
-{
-    return enchantId > PARAGON_ENCHANT_BASE_ID &&
-           enchantId <= PARAGON_ENCHANT_BASE_ID + PROFILE_MAX * PARAGON_ENCHANT_PROFILE_STRIDE;
-}
+    if (item->IsEquipped())
+        player->ApplyEnchantment(item, EnchantmentSlot(slot), false);
 
-static bool ItemHasParagonEnchantment(Item* item)
-{
-    uint32 enchId = item->GetEnchantmentId(EnchantmentSlot(PARAGON_ENCHANT_SLOT));
-    return IsParagonEnchantment(enchId);
+    item->SetEnchantment(EnchantmentSlot(slot), enchantId, 0, 0);
+
+    if (item->IsEquipped())
+        player->ApplyEnchantment(item, EnchantmentSlot(slot), true);
 }
 
 // ============================================================
-// Core: Apply paragon enchantment to an item
+// Core: Apply paragon enchantments to an item
 // ============================================================
 
 static void ApplyParagonEnchantment(Player* player, Item* item)
@@ -183,7 +253,6 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     if (!IsEligibleItem(item))
         return;
 
-    // Don't re-enchant items that already have a paragon enchantment
     if (ItemHasParagonEnchantment(item))
         return;
 
@@ -191,40 +260,51 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     if (paragonLevel < conf_MinParagonLevel)
         return;
 
-    ParagonStatProfile profile = GetPlayerProfile(player);
-    uint32 statAmount = CalculateStatAmount(paragonLevel, item->GetTemplate()->Quality);
-    uint32 enchantId = GetEnchantmentId(profile, statAmount);
-
-    // Verify the enchantment exists in the DBC store
-    if (!sSpellItemEnchantmentStore.LookupEntry(enchantId))
+    PlayerRoleInfo roleInfo = GetPlayerRoleInfo(player);
+    if (!roleInfo.found)
     {
-        LOG_ERROR("module", "ParagonItemGen: Enchantment ID {} not found in sSpellItemEnchantmentStore", enchantId);
+        ChatHandler(player->GetSession()).PSendSysMessage(
+            "|cffff0000[Paragon]|r Set your role first with: .paragon role tank|dps|healer");
         return;
     }
 
-    // Remove existing enchantment in this slot if any
-    if (item->IsEquipped())
-        player->ApplyEnchantment(item, EnchantmentSlot(PARAGON_ENCHANT_SLOT), false);
+    uint32 statAmount = CalculateStatAmount(paragonLevel, item->GetTemplate()->Quality);
 
-    // Apply the paragon enchantment
-    item->SetEnchantment(EnchantmentSlot(PARAGON_ENCHANT_SLOT), enchantId, 0, 0);
+    // Slot 0 (7): Stamina - always
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_STAMINA,
+        GetEnchantmentId(PSTAT_STAMINA, statAmount));
 
-    if (item->IsEquipped())
-        player->ApplyEnchantment(item, EnchantmentSlot(PARAGON_ENCHANT_SLOT), true);
+    // Slot 1 (8): Main stat - player choice
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_MAINSTAT,
+        GetEnchantmentId(roleInfo.mainStat, statAmount));
 
-    // Track in database for trade restriction enforcement
+    // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
+    ParagonStatIndex cr1, cr2;
+    PickTwoRandomRatings(roleInfo.role, cr1, cr2);
+
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING1,
+        GetEnchantmentId(cr1, statAmount));
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING2,
+        GetEnchantmentId(cr2, statAmount));
+
+    // Slot 4 (11): Talent spell - TODO: placeholder for custom spells
+    // Will be implemented when custom spells are created
+
+    // Track in DB for trade restrictions
     CharacterDatabase.Execute(
-        "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, profileId, statAmount) VALUES ({}, {}, {}, {})",
-        item->GetGUID().GetCounter(), paragonLevel, static_cast<uint8>(profile), statAmount);
+        "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, role, mainStat, combatRating1, combatRating2, statAmount) "
+        "VALUES ({}, {}, {}, {}, {}, {}, {})",
+        item->GetGUID().GetCounter(), paragonLevel,
+        static_cast<uint8>(roleInfo.role), static_cast<uint8>(roleInfo.mainStat),
+        static_cast<uint8>(cr1), static_cast<uint8>(cr2), statAmount);
 
-    // Notify player
     ChatHandler(player->GetSession()).PSendSysMessage(
         "|cff00ff00[Paragon]|r Item enhanced with +{} stats (Paragon Level {}).",
         statAmount, paragonLevel);
 }
 
 // ============================================================
-// PlayerScript: Hook into item acquisition and trade events
+// PlayerScript: Item acquisition and trade restriction hooks
 // ============================================================
 
 class ParagonItemGenPlayer : public PlayerScript
@@ -232,28 +312,24 @@ class ParagonItemGenPlayer : public PlayerScript
 public:
     ParagonItemGenPlayer() : PlayerScript("ParagonItemGenPlayer") { }
 
-    // Looted items
     void OnPlayerLootItem(Player* player, Item* item, uint32 /*count*/, ObjectGuid /*lootguid*/) override
     {
         if (conf_OnLoot)
             ApplyParagonEnchantment(player, item);
     }
 
-    // Crafted items
     void OnPlayerCreateItem(Player* player, Item* item, uint32 /*count*/) override
     {
         if (conf_OnCreate)
             ApplyParagonEnchantment(player, item);
     }
 
-    // Quest reward items
     void OnPlayerQuestRewardItem(Player* player, Item* item, uint32 /*count*/) override
     {
         if (conf_OnQuest)
             ApplyParagonEnchantment(player, item);
     }
 
-    // Vendor purchased items
     void OnPlayerAfterStoreOrEquipNewItem(Player* player, uint32 /*vendorslot*/, Item* item,
         uint8 /*count*/, uint8 /*bag*/, uint8 /*slot*/, ItemTemplate const* /*pProto*/,
         Creature* /*pVendor*/, VendorItem const* /*crItem*/, bool /*bStore*/) override
@@ -262,9 +338,7 @@ public:
             ApplyParagonEnchantment(player, item);
     }
 
-    // ========================================================
-    // Trade restriction: block trading paragon items to lower-level players
-    // ========================================================
+    // Trade restriction
     bool OnPlayerCanSetTradeItem(Player* player, Item* tradedItem, uint8 /*tradeSlot*/) override
     {
         if (!conf_BlockTrade || !tradedItem)
@@ -291,8 +365,7 @@ public:
         if (targetParagonLevel < itemParagonLevel)
         {
             ChatHandler(player->GetSession()).PSendSysMessage(
-                "|cffff0000[Paragon]|r Cannot trade this item - recipient's Paragon Level ({}) "
-                "is lower than the item's Paragon Level ({}).",
+                "|cffff0000[Paragon]|r Cannot trade - recipient Paragon Level ({}) < item Paragon Level ({}).",
                 targetParagonLevel, itemParagonLevel);
             return false;
         }
@@ -300,9 +373,7 @@ public:
         return true;
     }
 
-    // ========================================================
-    // Mail restriction: block mailing paragon items to lower-level players
-    // ========================================================
+    // Mail restriction
     bool OnPlayerCanSendMail(Player* player, ObjectGuid receiverGuid, ObjectGuid /*mailbox*/,
         std::string& /*subject*/, std::string& /*body*/, uint32 /*money*/, uint32 /*COD*/,
         Item* item) override
@@ -335,8 +406,7 @@ public:
         if (receiverParagonLevel < itemParagonLevel)
         {
             ChatHandler(player->GetSession()).PSendSysMessage(
-                "|cffff0000[Paragon]|r Cannot mail this item - recipient's Paragon Level ({}) "
-                "is lower than the item's Paragon Level ({}).",
+                "|cffff0000[Paragon]|r Cannot mail - recipient Paragon Level ({}) < item Paragon Level ({}).",
                 receiverParagonLevel, itemParagonLevel);
             return false;
         }
@@ -344,15 +414,11 @@ public:
         return true;
     }
 
-    // TODO: AH restriction - no CanListAuction hook in AzerothCore.
-    // Possible solutions:
-    //   1. Core patch: add a CanCreateAuction hook in AuctionHouseMgr
-    //   2. AuctionHouseScript::OnAuctionAdd to cancel and return the item
-    //   3. Mark paragon-enchanted items as soulbound (prevents all transfers)
+    // TODO: AH restriction - no CanListAuction hook in AzerothCore
 };
 
 // ============================================================
-// WorldScript: Load configuration
+// WorldScript: Configuration
 // ============================================================
 
 class ParagonItemGenWorld : public WorldScript
@@ -379,14 +445,10 @@ public:
         conf_QualityMult[5]  = sConfigMgr->GetOption<float>("ParagonItemGen.QualityMult.Legendary", 1.25f);
 
         if (conf_Enable)
-            LOG_INFO("module", "ParagonItemGen: Loaded (ScalingFactor={}, MinLevel={}, MinIlvl={})",
+            LOG_INFO("module", "ParagonItemGen: Loaded (Scaling={}, MinPLevel={}, MinIlvl={})",
                 conf_ScalingFactor, conf_MinParagonLevel, conf_MinItemLevel);
     }
 };
-
-// ============================================================
-// Script registration
-// ============================================================
 
 void AddParagonItemGenScripts()
 {
