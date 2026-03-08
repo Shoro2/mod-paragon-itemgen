@@ -451,9 +451,11 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     // Slot 4 (11): Talent spell - TODO: placeholder for custom spells
     // Will be implemented when custom spells are created
 
-    // Cursed items become soulbound and trigger a shadow visual
+    // Cursed items: set slot 11 marker, soulbound, shadow visual
     if (isCursed)
     {
+        ApplySlotEnchantment(player, item, PARAGON_SLOT_TALENT_SPELL, PARAGON_ENCHANT_CURSED_ID);
+
         if (!item->IsSoulBound())
             item->SetBinding(true);
 
@@ -461,16 +463,17 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         player->SendPlaySpellVisual(conf_CursedVisualKit);
     }
 
-    // Use average stat amount for DB tracking (cursed uses the cursed amount for all slots)
+    // Use cursed amount for DB tracking when cursed, max otherwise
     uint32 dbStatAmount = isCursed ? staAmount : maxStatAmount;
 
     // Track in DB for trade restrictions
     CharacterDatabase.Execute(
-        "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, role, mainStat, combatRating1, combatRating2, statAmount) "
-        "VALUES ({}, {}, {}, {}, {}, {}, {})",
+        "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, role, mainStat, combatRating1, combatRating2, statAmount, cursed) "
+        "VALUES ({}, {}, {}, {}, {}, {}, {}, {})",
         item->GetGUID().GetCounter(), paragonLevel,
         static_cast<uint8>(roleInfo.role), static_cast<uint8>(roleInfo.mainStat),
-        static_cast<uint8>(cr1), static_cast<uint8>(cr2), dbStatAmount);
+        static_cast<uint8>(cr1), static_cast<uint8>(cr2), dbStatAmount,
+        isCursed ? 1 : 0);
 
     LOG_INFO("module", "ParagonItemGen: Enhanced item {} (entry {}) for player {} - "
         "PLevel={}, Role={}, MainStat={}, CR1={}, CR2={}, Sta={}, Main={}, CR1Amt={}, CR2Amt={}, Cursed={}",

@@ -3578,7 +3578,16 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 ;
 
 -- =============================================================
--- Talent Spell Enchantments (placeholder, IDs 920001+)
+-- Cursed Item Marker Enchantment (ID 920001)
+-- Applied to slot 11 when an item rolls "cursed"
+-- Effect type 0 = no stat bonus (purely a label in the tooltip)
+-- =============================================================
+DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 920001;
+INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
+(920001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Cursed', 0, 0, 0, 0, 0, 0, 0);
+
+-- =============================================================
+-- Talent Spell Enchantments (placeholder, IDs 920002+)
 -- TODO: Replace with custom spells later
 -- Type 3 = ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL (passive aura)
 -- Type 1 = ITEM_ENCHANTMENT_TYPE_COMBAT_SPELL (proc on hit)
