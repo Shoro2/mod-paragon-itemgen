@@ -17,6 +17,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **3 roles**: Tank, DPS, Healer — each with a distinct combat rating pool
 - **Scaling formula**: `ceil(paragonLevel × scalingFactor × qualityMultiplier)`, capped at 200
+- **Random stat rolls**: Each stat rolls independently from 1 to the calculated max value
+- **Cursed items**: 1% chance (configurable) for all stats to be set to 150% of max, item becomes soulbound, shadow visual plays on player
 - **Permanent enchantments**: Items keep stats forever; role/stat changes only affect new items
 - **Transfer restrictions**: Trade/mail blocked to players with lower Paragon level
 
@@ -116,7 +118,9 @@ Tracks paragon-enchanted items for trade/mail restriction enforcement.
 
 | Function | Purpose |
 |----------|---------|
-| `ApplyParagonEnchantment(Player*, Item*)` | Main entry: validates item, calculates stats, applies 4 enchantment slots |
+| `ApplyParagonEnchantment(Player*, Item*)` | Main entry: validates item, calculates stats, rolls random amounts (or cursed), applies 4 enchantment slots |
+| `RollStatAmount(maxAmount)` | Rolls a random stat value from 1 to maxAmount |
+| `RollCursed()` | Returns true with `conf_CursedChance`% probability |
 | `GetPlayerParagonLevel(Player*)` | Queries `character_paragon` for account's Paragon level |
 | `GetPlayerRoleInfo(Player*)` | Queries `character_paragon_role` for role + main stat |
 | `PickTwoRandomRatings(role, &cr1, &cr2)` | Selects 2 distinct random ratings from role pool |
@@ -164,6 +168,9 @@ All options read via `sConfigMgr->GetOption<>()` in `OnAfterConfigLoad`:
 | `ParagonItemGen.QualityMult.Rare` | float | 0.75 |
 | `ParagonItemGen.QualityMult.Epic` | float | 1.0 |
 | `ParagonItemGen.QualityMult.Legendary` | float | 1.25 |
+| `ParagonItemGen.CursedChance` | float | 1.0 |
+| `ParagonItemGen.CursedMultiplier` | float | 1.5 |
+| `ParagonItemGen.CursedVisualKit` | uint32 | 5765 |
 
 ## Build & Integration
 

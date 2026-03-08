@@ -37,6 +37,9 @@ static uint32 conf_MinParagonLevel = 1;
 static uint32 conf_MinItemLevel    = 150;
 static bool   conf_BlockTrade      = true;
 static bool   conf_BlockMail       = true;
+static float  conf_CursedChance    = 1.0f;
+static float  conf_CursedMultiplier = 1.5f;
+static uint32 conf_CursedVisualKit = 5765;
 
 // ============================================================
 // Stat name lookup for debug logging
@@ -294,6 +297,26 @@ static uint32 CalculateStatAmount(uint32 paragonLevel, uint8 quality)
     return result;
 }
 
+static uint32 RollStatAmount(uint32 maxAmount)
+{
+    if (maxAmount <= 1)
+        return 1;
+
+    static thread_local std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> dist(1, static_cast<int>(maxAmount));
+    return static_cast<uint32>(dist(rng));
+}
+
+static bool RollCursed()
+{
+    if (conf_CursedChance <= 0.0f)
+        return false;
+
+    static thread_local std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<float> dist(0.0f, 100.0f);
+    return dist(rng) < conf_CursedChance;
+}
+
 static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 enchantId)
 {
     if (!sSpellItemEnchantmentStore.LookupEntry(enchantId))
@@ -359,26 +382,65 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         return;
     }
 
-    uint32 statAmount = CalculateStatAmount(paragonLevel, item->GetTemplate()->Quality);
+    uint32 maxStatAmount = CalculateStatAmount(paragonLevel, item->GetTemplate()->Quality);
 
-    // Slot 0 (7): Stamina - always
-    uint32 staEnchId = GetEnchantmentId(PSTAT_STAMINA, statAmount);
-    LOG_DEBUG("module", "ParagonItemGen: Slot {} (Stamina): enchantId={}, amount={}",
-        PARAGON_SLOT_STAMINA, staEnchId, statAmount);
-    ApplySlotEnchantment(player, item, PARAGON_SLOT_STAMINA, staEnchId);
-
-    // Slot 1 (8): Main stat - player choice
-    uint32 mainEnchId = GetEnchantmentId(roleInfo.mainStat, statAmount);
-    LOG_DEBUG("module", "ParagonItemGen: Slot {} (MainStat={}): enchantId={}, amount={}",
-        PARAGON_SLOT_MAINSTAT, StatIndexToName(roleInfo.mainStat), mainEnchId, statAmount);
-    ApplySlotEnchantment(player, item, PARAGON_SLOT_MAINSTAT, mainEnchId);
+    // Check for cursed roll (1% chance by default)
+    bool isCursed = RollCursed();
 
     // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
     ParagonStatIndex cr1, cr2;
     PickTwoRandomRatings(roleInfo.role, cr1, cr2);
 
-    uint32 cr1EnchId = GetEnchantmentId(cr1, statAmount);
-    uint32 cr2EnchId = GetEnchantmentId(cr2, statAmount);
+    uint32 staAmount, mainAmount, cr1Amount, cr2Amount;
+
+    if (isCursed)
+    {
+        // Cursed: all stats at 150% of max (capped at PARAGON_ENCHANT_MAX_AMOUNT)
+        uint32 cursedAmount = static_cast<uint32>(std::ceil(
+            static_cast<float>(maxStatAmount) * conf_CursedMultiplier));
+        if (cursedAmount > PARAGON_ENCHANT_MAX_AMOUNT)
+            cursedAmount = PARAGON_ENCHANT_MAX_AMOUNT;
+        if (cursedAmount < 1)
+            cursedAmount = 1;
+
+        staAmount = cursedAmount;
+        mainAmount = cursedAmount;
+        cr1Amount = cursedAmount;
+        cr2Amount = cursedAmount;
+
+        LOG_INFO("module", "ParagonItemGen: CURSED roll for player {} on item {} (entry {})! "
+            "All stats set to {} ({}% of max {})",
+            player->GetName(), item->GetGUID().GetCounter(), item->GetEntry(),
+            cursedAmount, static_cast<int>(conf_CursedMultiplier * 100), maxStatAmount);
+    }
+    else
+    {
+        // Normal: each stat rolls randomly from 1 to max
+        staAmount = RollStatAmount(maxStatAmount);
+        mainAmount = RollStatAmount(maxStatAmount);
+        cr1Amount = RollStatAmount(maxStatAmount);
+        cr2Amount = RollStatAmount(maxStatAmount);
+
+        LOG_DEBUG("module", "ParagonItemGen: Random rolls for player {} - "
+            "Sta={}, Main={}, CR1={}, CR2={} (max={})",
+            player->GetName(), staAmount, mainAmount, cr1Amount, cr2Amount, maxStatAmount);
+    }
+
+    // Slot 0 (7): Stamina - always
+    uint32 staEnchId = GetEnchantmentId(PSTAT_STAMINA, staAmount);
+    LOG_DEBUG("module", "ParagonItemGen: Slot {} (Stamina): enchantId={}, amount={}",
+        PARAGON_SLOT_STAMINA, staEnchId, staAmount);
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_STAMINA, staEnchId);
+
+    // Slot 1 (8): Main stat - player choice
+    uint32 mainEnchId = GetEnchantmentId(roleInfo.mainStat, mainAmount);
+    LOG_DEBUG("module", "ParagonItemGen: Slot {} (MainStat={}): enchantId={}, amount={}",
+        PARAGON_SLOT_MAINSTAT, StatIndexToName(roleInfo.mainStat), mainEnchId, mainAmount);
+    ApplySlotEnchantment(player, item, PARAGON_SLOT_MAINSTAT, mainEnchId);
+
+    // Slot 2 (9) & Slot 3 (10): Random combat ratings
+    uint32 cr1EnchId = GetEnchantmentId(cr1, cr1Amount);
+    uint32 cr2EnchId = GetEnchantmentId(cr2, cr2Amount);
     LOG_DEBUG("module", "ParagonItemGen: Slot {} (CR1={}): enchantId={}, Slot {} (CR2={}): enchantId={}",
         PARAGON_SLOT_COMBAT_RATING1, StatIndexToName(cr1), cr1EnchId,
         PARAGON_SLOT_COMBAT_RATING2, StatIndexToName(cr2), cr2EnchId);
@@ -389,23 +451,46 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     // Slot 4 (11): Talent spell - TODO: placeholder for custom spells
     // Will be implemented when custom spells are created
 
+    // Cursed items become soulbound and trigger a shadow visual
+    if (isCursed)
+    {
+        if (!item->IsSoulBound())
+            item->SetBinding(true);
+
+        // Play shadow visual on the player
+        player->SendPlaySpellVisual(conf_CursedVisualKit);
+    }
+
+    // Use average stat amount for DB tracking (cursed uses the cursed amount for all slots)
+    uint32 dbStatAmount = isCursed ? staAmount : maxStatAmount;
+
     // Track in DB for trade restrictions
     CharacterDatabase.Execute(
         "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, role, mainStat, combatRating1, combatRating2, statAmount) "
         "VALUES ({}, {}, {}, {}, {}, {}, {})",
         item->GetGUID().GetCounter(), paragonLevel,
         static_cast<uint8>(roleInfo.role), static_cast<uint8>(roleInfo.mainStat),
-        static_cast<uint8>(cr1), static_cast<uint8>(cr2), statAmount);
+        static_cast<uint8>(cr1), static_cast<uint8>(cr2), dbStatAmount);
 
     LOG_INFO("module", "ParagonItemGen: Enhanced item {} (entry {}) for player {} - "
-        "PLevel={}, Role={}, MainStat={}, CR1={}, CR2={}, Amount={}",
+        "PLevel={}, Role={}, MainStat={}, CR1={}, CR2={}, Sta={}, Main={}, CR1Amt={}, CR2Amt={}, Cursed={}",
         item->GetGUID().GetCounter(), item->GetEntry(), player->GetName(),
         paragonLevel, RoleToName(roleInfo.role), StatIndexToName(roleInfo.mainStat),
-        StatIndexToName(cr1), StatIndexToName(cr2), statAmount);
+        StatIndexToName(cr1), StatIndexToName(cr2),
+        staAmount, mainAmount, cr1Amount, cr2Amount, isCursed);
 
-    ChatHandler(player->GetSession()).PSendSysMessage(
-        "|cff00ff00[Paragon]|r Item enhanced with +{} stats (Paragon Level {}).",
-        statAmount, paragonLevel);
+    if (isCursed)
+    {
+        ChatHandler(player->GetSession()).PSendSysMessage(
+            "|cff8b00ff[Paragon]|r |cffff0000CURSED!|r Item enhanced with +{} stats ({}%% of max, Paragon Level {}).",
+            staAmount, static_cast<int>(conf_CursedMultiplier * 100), paragonLevel);
+    }
+    else
+    {
+        ChatHandler(player->GetSession()).PSendSysMessage(
+            "|cff00ff00[Paragon]|r Item enhanced (Paragon Level {}). Sta: +{}, Main: +{}, CR1: +{}, CR2: +{}",
+            paragonLevel, staAmount, mainAmount, cr1Amount, cr2Amount);
+    }
 }
 
 // ============================================================
@@ -576,12 +661,18 @@ public:
         conf_QualityMult[4]  = sConfigMgr->GetOption<float>("ParagonItemGen.QualityMult.Epic", 1.0f);
         conf_QualityMult[5]  = sConfigMgr->GetOption<float>("ParagonItemGen.QualityMult.Legendary", 1.25f);
 
+        conf_CursedChance     = sConfigMgr->GetOption<float>("ParagonItemGen.CursedChance", 1.0f);
+        conf_CursedMultiplier = sConfigMgr->GetOption<float>("ParagonItemGen.CursedMultiplier", 1.5f);
+        conf_CursedVisualKit  = sConfigMgr->GetOption<uint32>("ParagonItemGen.CursedVisualKit", 5765);
+
         LOG_INFO("module", "ParagonItemGen: Config loaded - Enable={}, OnLoot={}, OnCreate={}, OnQuest={}, OnVendor={}, "
             "Scaling={}, MinPLevel={}, MinIlvl={}, BlockTrade={}, BlockMail={}, "
-            "QMult=[Uncommon={}, Rare={}, Epic={}, Legendary={}]",
+            "QMult=[Uncommon={}, Rare={}, Epic={}, Legendary={}], "
+            "CursedChance={}%, CursedMult={}x, CursedVisual={}",
             conf_Enable, conf_OnLoot, conf_OnCreate, conf_OnQuest, conf_OnVendor,
             conf_ScalingFactor, conf_MinParagonLevel, conf_MinItemLevel, conf_BlockTrade, conf_BlockMail,
-            conf_QualityMult[2], conf_QualityMult[3], conf_QualityMult[4], conf_QualityMult[5]);
+            conf_QualityMult[2], conf_QualityMult[3], conf_QualityMult[4], conf_QualityMult[5],
+            conf_CursedChance, conf_CursedMultiplier, conf_CursedVisualKit);
     }
 };
 
