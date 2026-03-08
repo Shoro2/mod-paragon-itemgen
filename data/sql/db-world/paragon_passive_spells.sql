@@ -5,7 +5,7 @@
 --
 -- ID Ranges:
 --   spell_dbc:               900001-900999 (passive/proc/triggered)
---   spellitemenchantment_dbc: 900001-999999 (equip/combat enchants)
+--   spellitemenchantment_dbc: 950001-950999 (equip/combat enchants)
 --   paragon_passive_spell_pool: spell catalog (enchantment reference)
 --   paragon_spec_spell_assign: spec → spell mapping
 --
