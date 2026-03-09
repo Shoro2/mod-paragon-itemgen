@@ -170,6 +170,7 @@ def main():
 
     # spellitemenchantment_dbc
     sql_lines.append("-- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)")
+    sql_lines.append(f"DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = {ench_id};")
     sql_lines.append(
         f"INSERT INTO `spellitemenchantment_dbc` "
         f"(`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, "
@@ -185,6 +186,7 @@ def main():
 
     # paragon_passive_spell_pool
     sql_lines.append("-- paragon_passive_spell_pool: spell catalog entry")
+    sql_lines.append(f"DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = {ench_id};")
     sql_lines.append(
         f"INSERT INTO `paragon_passive_spell_pool` "
         f"(`enchantmentId`, `spellId`, `name`, `category`, `minParagonLevel`, `minItemLevel`) VALUES\n"
@@ -196,6 +198,7 @@ def main():
         sql_lines.append("")
         spec_names = ", ".join(SPECS[s][1] for s in spec_ids)
         sql_lines.append(f"-- paragon_spec_spell_assign: {spec_names}")
+        sql_lines.append(f"DELETE FROM `paragon_spec_spell_assign` WHERE `enchantmentId` = {ench_id};")
         sql_lines.append(
             f"INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VALUES"
         )
