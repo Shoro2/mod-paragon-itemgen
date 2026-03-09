@@ -26,7 +26,7 @@ Requires [mod-paragon](https://github.com/Shoro2/mod-paragon) for the Paragon pr
 | DPS | Crit, Haste, Hit, Armor Pen, Expertise, Attack Power, Spell Power |
 | Healer | Crit, Haste, Spell Power, Mana Regen |
 
-- **Scaling formula**: `ceil(paragonLevel * scalingFactor * qualityMultiplier)`, capped at 200
+- **Scaling formula**: `ceil(paragonLevel * scalingFactor * qualityMultiplier)`, capped at 666
 - **Permanent stats**: Items keep their enchantments forever. Changing role/stat only affects *new* items.
 - **Transfer restrictions**: Trade and mail of paragon-enchanted items is blocked to players with a lower Paragon level.
 - **AIO tooltip enhancement**: Client-side Lua addon colorizes cursed items in purple with a warning line.
@@ -94,7 +94,7 @@ See [`conf/paragon_itemgen.conf.dist`](conf/paragon_itemgen.conf.dist) for all o
 
 ### `spellitemenchantment_dbc` (world DB)
 
-3,401 custom enchantment entries (IDs 900001–916200 + 920001). 17 stat types × 200 amount levels, plus one "Cursed" marker. Each stat entry has a single `ITEM_ENCHANTMENT_TYPE_STAT` effect.
+11,323 custom enchantment entries (IDs 900001–916666 + 920001). 17 stat types × 666 amount levels, plus one "Cursed" marker. Each stat entry has a single `ITEM_ENCHANTMENT_TYPE_STAT` effect.
 
 ### `character_paragon_role` (characters DB)
 
@@ -127,23 +127,23 @@ Formula: 900000 + statIndex × 1000 + amount
 
 Stat Index | Stat              | ITEM_MOD | ID Range
 -----------|-------------------|----------|------------------
-0          | Stamina           | 7        | 900001 – 900200
-1          | Strength          | 4        | 901001 – 901200
-2          | Agility           | 3        | 902001 – 902200
-3          | Intellect         | 5        | 903001 – 903200
-4          | Spirit            | 6        | 904001 – 904200
-5          | Dodge Rating      | 13       | 905001 – 905200
-6          | Parry Rating      | 14       | 906001 – 906200
-7          | Defense Rating    | 12       | 907001 – 907200
-8          | Block Rating      | 15       | 908001 – 908200
-9          | Hit Rating        | 31       | 909001 – 909200
-10         | Crit Rating       | 32       | 910001 – 910200
-11         | Haste Rating      | 36       | 911001 – 911200
-12         | Expertise Rating  | 37       | 912001 – 912200
-13         | Armor Penetration | 44       | 913001 – 913200
-14         | Spell Power       | 45       | 914001 – 914200
-15         | Attack Power      | 38       | 915001 – 915200
-16         | Mana Regeneration | 43       | 916001 – 916200
+0          | Stamina           | 7        | 900001 – 900666
+1          | Strength          | 4        | 901001 – 901666
+2          | Agility           | 3        | 902001 – 902666
+3          | Intellect         | 5        | 903001 – 903666
+4          | Spirit            | 6        | 904001 – 904666
+5          | Dodge Rating      | 13       | 905001 – 905666
+6          | Parry Rating      | 14       | 906001 – 906666
+7          | Defense Rating    | 12       | 907001 – 907666
+8          | Block Rating      | 15       | 908001 – 908666
+9          | Hit Rating        | 31       | 909001 – 909666
+10         | Crit Rating       | 32       | 910001 – 910666
+11         | Haste Rating      | 36       | 911001 – 911666
+12         | Expertise Rating  | 37       | 912001 – 912666
+13         | Armor Penetration | 44       | 913001 – 913666
+14         | Spell Power       | 45       | 914001 – 914666
+15         | Attack Power      | 38       | 915001 – 915666
+16         | Mana Regeneration | 43       | 916001 – 916666
 
 920001     | Cursed (marker)   | —        | 920001 (slot 11)
 

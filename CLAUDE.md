@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Slot 11: Passive spell (cursed items with spec set), "Cursed" marker (cursed without spec), or empty (normal items)
 
 - **3 roles**: Tank, DPS, Healer — each with a distinct combat rating pool
-- **Scaling formula**: `ceil(paragonLevel × scalingFactor × qualityMultiplier)`, capped at 200
+- **Scaling formula**: `ceil(paragonLevel × scalingFactor × qualityMultiplier)`, capped at 666
 - **Random stat rolls**: Each stat rolls independently from 1 to the calculated max value
 - **Cursed items**: 1% chance (configurable) for all stats to be set to 150% of max, item becomes soulbound, shadow visual plays on player
 - **Permanent enchantments**: Items keep stats forever; role/stat changes only affect new items
@@ -41,7 +41,7 @@ mod-paragon-itemgen/
 │   ├── db-characters/
 │   │   └── paragon_item_enchants.sql # character_paragon_role + character_paragon_item tables
 │   └── db-world/
-│       └── paragon_itemgen_enchantments.sql  # 3401 spellitemenchantment_dbc entries (3400 stats + 1 cursed)
+│       └── paragon_itemgen_enchantments.sql  # 11323 spellitemenchantment_dbc entries (11322 stats + 1 cursed)
 ├── Paragon_System_LUA/
 │   ├── ItemGen_Client.lua            # AIO client addon: tooltip enhancement for cursed items
 │   └── ItemGen_Server.lua            # AIO server: registers client addon
@@ -60,13 +60,13 @@ mod-paragon-itemgen/
 
 ```
 Base: 900000
-Formula: 900000 + statIndex × 1000 + amount (1–200)
+Formula: 900000 + statIndex × 1000 + amount (1–666)
 
-Stat Index 0  = Stamina (ITEM_MOD 7)    → IDs 900001–900200
-Stat Index 1  = Strength (ITEM_MOD 4)   → IDs 901001–901200
-Stat Index 2  = Agility (ITEM_MOD 3)    → IDs 902001–902200
+Stat Index 0  = Stamina (ITEM_MOD 7)    → IDs 900001–900666
+Stat Index 1  = Strength (ITEM_MOD 4)   → IDs 901001–901666
+Stat Index 2  = Agility (ITEM_MOD 3)    → IDs 902001–902666
 ...
-Stat Index 16 = Mana Regen (ITEM_MOD 43) → IDs 916001–916200
+Stat Index 16 = Mana Regen (ITEM_MOD 43) → IDs 916001–916666
 
 ID 920001 = "Cursed" marker (no stat effect, slot 11 label only, used when no passive spell)
 IDs 950001–950099 = Passive spell enchantments (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL, cursed items only)
@@ -78,7 +78,7 @@ Each enchantment has exactly **one** `ITEM_ENCHANTMENT_TYPE_STAT` (type 5) effec
 
 For stat enchantments:
 - `Effect_1` = 5 (`ITEM_ENCHANTMENT_TYPE_STAT`)
-- `EffectPointsMin_1` = stat amount (1–200)
+- `EffectPointsMin_1` = stat amount (1–666)
 - `EffectArg_1` = `ITEM_MOD_*` enum value
 - `Effect_2`, `Effect_3` = 0 (unused)
 
@@ -198,7 +198,7 @@ Follow AzerothCore C++ conventions:
 
 Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
 
-- **All 4 stats** set to `conf_CursedMultiplier` × max value (default 150%), capped at 200
+- **All 4 stats** set to `conf_CursedMultiplier` × max value (default 150%), capped at 666
 - **Soulbound** immediately via `item->SetBinding(true)`
 - **Shadow visual** played on the player via `player->SendPlaySpellVisual(conf_CursedVisualKit)`
 - **Passive spell** (slot 11): If the player has a spec set, a passive spell from the spec's pool is rolled and applied as an equip-spell enchantment (IDs 950001–950099). This is the cursed item's bonus reward.
