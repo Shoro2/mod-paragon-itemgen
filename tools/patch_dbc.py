@@ -66,6 +66,26 @@ BASE_ID = 900000
 MAX_AMOUNT = 200
 CURSED_ENCHANT_ID = 920001
 
+# Passive spell enchantments: (enchantment_id, spell_id, name)
+# These use Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL), EffectArg_1=spellId
+# Names must match the server-side spellitemenchantment_dbc entries
+PASSIVE_SPELL_ENCHANT_MIN = 950001
+PASSIVE_SPELL_ENCHANT_MAX = 950099
+PASSIVE_SPELL_ENCHANTS = [
+    (950001, 900000, "Passive: +20% Strength"),
+    (950002, 900001, "Passive: +20% Intellect"),
+    (950003, 900002, "Passive: +20% Agility"),
+    (950004, 900003, "Passive: +20% Spirit"),
+    (950005, 900004, "Passive: +20% Stamina"),
+    (950006, 900005, "Passive: +10% All Stats"),
+    (950007, 900100, "Passive: +50% Mortal Strike Damage"),
+    (950008, 900101, "Passive: -2 sec Mortal Strike CD"),
+    (950009, 900102, "Passive: +50% Overpower Damage"),
+    (950010, 900103, "Passive: Mortal Strike +9 Targets"),
+    (950011, 900104, "Passive: Overpower +9 Targets"),
+    (950012, 900105, "Passive: Critical Execution"),
+]
+
 
 def read_dbc(filepath):
     """Read a DBC file and return (records, string_block, field_count)."""
@@ -174,6 +194,20 @@ def generate_paragon_entries(string_block):
     fields[14] = name_offset  # Name_Lang_enUS
     new_records.append(fields)
 
+    # Add passive spell enchantments (950001+)
+    # Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL), EffectArg_1=spellId
+    for enchant_id, spell_id, ench_name in PASSIVE_SPELL_ENCHANTS:
+        name_offset = len(sb)
+        sb.extend(ench_name.encode('utf-8'))
+        sb.append(0)
+
+        fields = [0] * FIELDS_PER_RECORD
+        fields[0] = enchant_id          # ID
+        fields[2] = 3                   # Effect_1 (EQUIP_SPELL)
+        fields[11] = spell_id           # EffectArg_1 (spell ID)
+        fields[14] = name_offset        # Name_Lang_enUS
+        new_records.append(fields)
+
     return new_records, bytes(sb)
 
 
@@ -196,15 +230,24 @@ def main():
     print(f"  Original string block: {len(string_block)} bytes")
 
     # Check for existing paragon entries and remove them
+    def is_paragon_id(rid):
+        # Stat enchantments (900001-917000) and cursed marker (920001)
+        if BASE_ID < rid <= CURSED_ENCHANT_ID:
+            return True
+        # Passive spell enchantments (950001-950099)
+        if PASSIVE_SPELL_ENCHANT_MIN <= rid <= PASSIVE_SPELL_ENCHANT_MAX:
+            return True
+        return False
+
     existing_ids = {r[0] for r in records}
-    paragon_existing = [rid for rid in existing_ids if BASE_ID < rid <= CURSED_ENCHANT_ID]
+    paragon_existing = [rid for rid in existing_ids if is_paragon_id(rid)]
     if paragon_existing:
         print(f"  Removing {len(paragon_existing)} existing paragon entries...")
-        records = [r for r in records if not (BASE_ID < r[0] <= CURSED_ENCHANT_ID)]
+        records = [r for r in records if not is_paragon_id(r[0])]
 
     # Generate paragon entries
-    total_entries = len(PARAGON_STATS) * MAX_AMOUNT
-    print(f"Generating {total_entries} paragon enchantment entries...")
+    total_entries = len(PARAGON_STATS) * MAX_AMOUNT + 1 + len(PASSIVE_SPELL_ENCHANTS)
+    print(f"Generating {total_entries} paragon enchantment entries (stats + cursed + passive spells)...")
     new_records, string_block = generate_paragon_entries(string_block)
 
     # Merge and sort by ID
