@@ -21,7 +21,7 @@
 // Enchantment ID layout: BASE + statIndex * 1000 + amount
 constexpr uint32 PARAGON_ENCHANT_BASE_ID       = 900000;
 constexpr uint32 PARAGON_ENCHANT_STAT_STRIDE    = 1000;
-constexpr uint32 PARAGON_ENCHANT_MAX_AMOUNT     = 200;
+constexpr uint32 PARAGON_ENCHANT_MAX_AMOUNT     = 666;
 constexpr uint32 PARAGON_ENCHANT_MAX_STAT_INDEX = 16;
 constexpr uint32 PARAGON_ENCHANT_CURSED_ID      = 920001;
 

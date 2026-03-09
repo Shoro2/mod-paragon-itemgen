@@ -63,7 +63,7 @@ PARAGON_STATS = [
 
 # ID layout: 900000 + stat_index * 1000 + amount (1-200)
 BASE_ID = 900000
-MAX_AMOUNT = 200
+MAX_AMOUNT = 666
 CURSED_ENCHANT_ID = 920001
 
 # Passive spell enchantments: (enchantment_id, spell_id, name)
