@@ -45,7 +45,7 @@ VALUES (900100, 0, 18718, 1, 1, 12340);
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950001;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950001, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900000, 0, 0, '+20% Strength', 0, 0, 0, 0, 0, 0, 0);
+(950001, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900000, 0, 0, 'Passive: +20% Strength', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950001;
@@ -64,7 +64,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950002;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950002, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900001, 0, 0, '+20% Intellect', 0, 0, 0, 0, 0, 0, 0);
+(950002, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900001, 0, 0, 'Passive: +20% Intellect', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950002;
@@ -85,7 +85,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950003;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950003, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900002, 0, 0, '+20 % Agility', 0, 0, 0, 0, 0, 0, 0);
+(950003, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900002, 0, 0, 'Passive: +20% Agility', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950003;
@@ -105,7 +105,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950004;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950004, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900003, 0, 0, '+20% Spirit', 0, 0, 0, 0, 0, 0, 0);
+(950004, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900003, 0, 0, 'Passive: +20% Spirit', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950004;
@@ -124,7 +124,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950005;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950005, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900004, 0, 0, '+20% Stamina', 0, 0, 0, 0, 0, 0, 0);
+(950005, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900004, 0, 0, 'Passive: +20% Stamina', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950005;
@@ -143,7 +143,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950006;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950006, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900005, 0, 0, '+10% All Stats', 0, 0, 0, 0, 0, 0, 0);
+(950006, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900005, 0, 0, 'Passive: +10% All Stats', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950006;
@@ -168,7 +168,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950007;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950007, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900100, 0, 0, '+50% Mortal Strike Damage', 0, 0, 0, 0, 0, 0, 0);
+(950007, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900100, 0, 0, 'Passive: +50% Mortal Strike Damage', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950007;
@@ -186,7 +186,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950008;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950008, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900101, 0, 0, '-2 sec Mortal Strike CD', 0, 0, 0, 0, 0, 0, 0);
+(950008, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900101, 0, 0, 'Passive: -2 sec Mortal Strike CD', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950008;
@@ -204,7 +204,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950009;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950009, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900102, 0, 0, '+50% Overpower Damage', 0, 0, 0, 0, 0, 0, 0);
+(950009, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900102, 0, 0, 'Passive: +50% Overpower Damage', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950009;
@@ -222,7 +222,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950010;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950010, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900103, 0, 0, 'Mortal Strike +9 Targets', 0, 0, 0, 0, 0, 0, 0);
+(950010, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900103, 0, 0, 'Passive: Mortal Strike +9 Targets', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950010;
@@ -240,7 +240,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950011;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950011, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900104, 0, 0, 'Overpower + 9 Targets', 0, 0, 0, 0, 0, 0, 0);
+(950011, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900104, 0, 0, 'Passive: Overpower +9 Targets', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950011;
@@ -258,7 +258,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- spellitemenchantment_dbc: Effect_1=3 (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL)
 DELETE FROM `spellitemenchantment_dbc` WHERE `ID` = 950012;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
-(950012, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900105, 0, 0, 'Spell: Critical Exectution', 0, 0, 0, 0, 0, 0, 0);
+(950012, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900105, 0, 0, 'Passive: Critical Execution', 0, 0, 0, 0, 0, 0, 0);
 
 -- paragon_passive_spell_pool: spell catalog entry
 DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` = 950012;

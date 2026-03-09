@@ -6,8 +6,8 @@
  *   Slot 8:  Main stat (player-chosen: Str/Agi/Int/Spi)
  *   Slot 9:  Random combat rating (role-dependent pool)
  *   Slot 10: Random combat rating (role-dependent pool, no duplicate)
- *   Slot 11: Passive spell effect (role-filtered, weighted random from pool)
- *            OR "Cursed" marker for cursed items
+ *   Slot 11: Passive spell effect (cursed items only, spec-filtered, weighted random)
+ *            OR "Cursed" marker label (cursed items without spec/passive)
  *
  * Passive spell effects include: stat % buffs, combat rating boosts,
  * damage/healing % increases, and proc-on-hit effects.
@@ -625,14 +625,28 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING1, cr1EnchId);
     ApplySlotEnchantment(player, item, PARAGON_SLOT_COMBAT_RATING2, cr2EnchId);
 
-    // Slot 4 (11): Passive spell effect OR cursed marker
+    // Slot 4 (11): Passive spell effect (cursed only) OR cursed marker
     uint32 passiveEnchantId = 0;
     ParagonSpec playerSpec = GetPlayerSpec(player);
 
     if (isCursed)
     {
-        // Cursed items: set slot 11 marker, soulbound, shadow visual
-        ApplySlotEnchantment(player, item, PARAGON_SLOT_TALENT_SPELL, PARAGON_ENCHANT_CURSED_ID);
+        // Cursed items: try to roll a passive spell for slot 11
+        passiveEnchantId = RollPassiveSpellEnchantment(
+            playerSpec, paragonLevel, item->GetTemplate()->ItemLevel);
+
+        if (passiveEnchantId)
+        {
+            // Cursed with passive: slot 11 gets the passive spell enchantment
+            ApplySlotEnchantment(player, item, PARAGON_SLOT_TALENT_SPELL, passiveEnchantId);
+            LOG_DEBUG("module", "ParagonItemGen: Applied passive spell enchantment {} to cursed item {} for player {}",
+                passiveEnchantId, item->GetGUID().GetCounter(), player->GetName());
+        }
+        else
+        {
+            // Cursed without passive: slot 11 gets the cursed marker label
+            ApplySlotEnchantment(player, item, PARAGON_SLOT_TALENT_SPELL, PARAGON_ENCHANT_CURSED_ID);
+        }
 
         if (!item->IsSoulBound())
             item->SetBinding(true);
@@ -640,19 +654,7 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         // Play shadow visual on the player
         player->SendPlaySpellVisual(conf_CursedVisualKit);
     }
-    else
-    {
-        // Normal items: roll a passive spell effect based on spec
-        passiveEnchantId = RollPassiveSpellEnchantment(
-            playerSpec, paragonLevel, item->GetTemplate()->ItemLevel);
-
-        if (passiveEnchantId)
-        {
-            ApplySlotEnchantment(player, item, PARAGON_SLOT_TALENT_SPELL, passiveEnchantId);
-            LOG_DEBUG("module", "ParagonItemGen: Applied passive spell enchantment {} to item {} for player {}",
-                passiveEnchantId, item->GetGUID().GetCounter(), player->GetName());
-        }
-    }
+    // Normal items: no passive spell, slot 11 left empty
 
     // Use cursed amount for DB tracking when cursed, max otherwise
     uint32 dbStatAmount = isCursed ? staAmount : maxStatAmount;
@@ -674,13 +676,7 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         StatIndexToName(cr1), StatIndexToName(cr2),
         staAmount, mainAmount, cr1Amount, cr2Amount, isCursed);
 
-    if (isCursed)
-    {
-        ChatHandler(player->GetSession()).PSendSysMessage(
-            "|cff8b00ff[Paragon]|r |cffff0000CURSED!|r Item enhanced with +{} stats ({}%% of max, Paragon Level {}).",
-            staAmount, static_cast<int>(conf_CursedMultiplier * 100), paragonLevel);
-    }
-    else if (passiveEnchantId)
+    if (isCursed && passiveEnchantId)
     {
         // Find the name of the passive spell from the spec pool
         std::string passiveName = "Unknown";
@@ -700,14 +696,20 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
             }
         }
         ChatHandler(player->GetSession()).PSendSysMessage(
-            "|cff00ff00[Paragon]|r Item enhanced (Paragon Level {}). Sta: +{}, Main: +{}, CR1: +{}, CR2: +{} | Passive: |cffa335ee{}|r",
-            paragonLevel, staAmount, mainAmount, cr1Amount, cr2Amount, passiveName);
+            "|cff8b00ff[Paragon]|r |cffff0000CURSED!|r Item enhanced with +{} stats ({}%% of max, Paragon Level {}). Passive: |cffa335ee{}|r",
+            staAmount, static_cast<int>(conf_CursedMultiplier * 100), paragonLevel, passiveName);
+    }
+    else if (isCursed)
+    {
+        ChatHandler(player->GetSession()).PSendSysMessage(
+            "|cff8b00ff[Paragon]|r |cffff0000CURSED!|r Item enhanced with +{} stats ({}%% of max, Paragon Level {}).",
+            staAmount, static_cast<int>(conf_CursedMultiplier * 100), paragonLevel);
     }
     else
     {
         std::string specHint = "";
         if (playerSpec == SPEC_NONE)
-            specHint = " | |cffff8000Set your spec at the Paragon Artificer NPC for passive spells!|r";
+            specHint = " | |cffff8000Set your spec at the Paragon Artificer NPC for passive spells on cursed items!|r";
 
         ChatHandler(player->GetSession()).PSendSysMessage(
             "|cff00ff00[Paragon]|r Item enhanced (Paragon Level {}). Sta: +{}, Main: +{}, CR1: +{}, CR2: +{}{}",

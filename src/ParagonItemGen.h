@@ -6,7 +6,7 @@
  *   PROP_ENCHANTMENT_SLOT_1 (8):  Main stat (player choice: Str/Agi/Int/Spi)
  *   PROP_ENCHANTMENT_SLOT_2 (9):  Random combat rating (role-based)
  *   PROP_ENCHANTMENT_SLOT_3 (10): Random combat rating (role-based)
- *   PROP_ENCHANTMENT_SLOT_4 (11): Passive spell effect (spec-based)
+ *   PROP_ENCHANTMENT_SLOT_4 (11): Passive spell effect (cursed items, spec-based) or Cursed marker
  *
  * Roles: Tank(0), DPS(1), Healer(2)
  * Role + main stat can only be changed in rested areas.

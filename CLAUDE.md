@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Slot 8: Main stat (player-chosen: Str/Agi/Int/Spi)
   - Slot 9: Random combat rating from role pool
   - Slot 10: Random combat rating from role pool (no duplicate of slot 9)
-  - Slot 11: "Cursed" marker (enchantment ID 920001) or empty for normal items
+  - Slot 11: Passive spell (cursed items with spec set), "Cursed" marker (cursed without spec), or empty (normal items)
 
 - **3 roles**: Tank, DPS, Healer — each with a distinct combat rating pool
 - **Scaling formula**: `ceil(paragonLevel × scalingFactor × qualityMultiplier)`, capped at 200
@@ -68,8 +68,8 @@ Stat Index 2  = Agility (ITEM_MOD 3)    → IDs 902001–902200
 ...
 Stat Index 16 = Mana Regen (ITEM_MOD 43) → IDs 916001–916200
 
-ID 920001 = "Cursed" marker (no stat effect, slot 11 label only)
-Reserved: 920002+ for talent spell enchantments (not yet created)
+ID 920001 = "Cursed" marker (no stat effect, slot 11 label only, used when no passive spell)
+IDs 950001–950099 = Passive spell enchantments (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL, cursed items only)
 ```
 
 Each enchantment has exactly **one** `ITEM_ENCHANTMENT_TYPE_STAT` (type 5) effect. Multiple stats per item are achieved by using separate enchantment slots.
@@ -201,21 +201,21 @@ Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
 - **All 4 stats** set to `conf_CursedMultiplier` × max value (default 150%), capped at 200
 - **Soulbound** immediately via `item->SetBinding(true)`
 - **Shadow visual** played on the player via `player->SendPlaySpellVisual(conf_CursedVisualKit)`
-- **Slot 11** receives enchantment ID `920001` ("Cursed") — visible in the item tooltip via DBC
-- **AIO Lua addon** enhances the tooltip: colorizes "Cursed" text purple, paragon stat lines get role-colored, and a red warning line is added
+- **Passive spell** (slot 11): If the player has a spec set, a passive spell from the spec's pool is rolled and applied as an equip-spell enchantment (IDs 950001–950099). This is the cursed item's bonus reward.
+- **Cursed marker** (slot 11): If no passive spell was rolled (no spec set, passive disabled, etc.), the "Cursed" label enchantment (ID 920001) is applied instead.
+- **Normal items** do NOT receive passive spells — passives are exclusive to cursed items.
+- **AIO Lua addon** enhances the tooltip: detects "Cursed" or "Passive:" text, colorizes lines purple, applies purple border glow, and adds a red warning line.
 
 ### Client-side Setup
 
-1. Run `tools/patch_dbc.py` on the already-patched (or original) `SpellItemEnchantment.dbc` — the script auto-removes old paragon entries before adding new ones (including the Cursed marker)
+1. Run `tools/patch_dbc.py` on the already-patched (or original) `SpellItemEnchantment.dbc` — the script auto-removes old paragon entries before adding new ones (including the Cursed marker and passive spell enchantments)
 2. Copy `Paragon_System_LUA/ItemGen_Client.lua` and `ItemGen_Server.lua` to the server's `lua_scripts/` folder (requires AIO)
 
 ## Known Issues and TODOs
 
 ### Not Yet Implemented
 
-1. **Talent Spell Slot (Slot 11)**: Currently used only for the "Cursed" marker enchantment. Custom talent spells (IDs 920002+) are not yet implemented.
-
-2. **Auction House Restriction**: AzerothCore has no `CanListAuction` or `CanCreateAuction` hook. The `OnAuctionAdd` hook fires *after* listing and returns void (cannot cancel). Options:
+1. **Auction House Restriction**: AzerothCore has no `CanListAuction` or `CanCreateAuction` hook. The `OnAuctionAdd` hook fires *after* listing and returns void (cannot cancel). Options:
    - Core patch: add a `CanCreateAuction` hook returning bool
    - `OnAuctionAdd` + immediate auction cancellation/item return (hacky)
    - Cursed items are already soulbound, preventing AH listing

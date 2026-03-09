@@ -2,7 +2,8 @@
 -- Paragon ItemGen - Client-side Tooltip Enhancement (AIO)
 --
 -- Scans item tooltips for "Cursed" enchantment text (from slot 11)
--- and enhances the display with purple color and warning text.
+-- or "Passive:" lines (passive spells on cursed items) and
+-- enhances the display with purple color and warning text.
 -- Also colorizes "Paragon +X" stat lines.
 -- Adds a purple glow border to cursed item tooltips.
 -- =============================================================
@@ -15,10 +16,12 @@ if AIO.AddAddon() then return end
 -- ============================================================
 
 local CURSED_TEXT       = "Cursed"
+local PASSIVE_PREFIX    = "Passive:"
 local PARAGON_PREFIX    = "Paragon +"
 local COLOR_CURSED      = "|cff9b59b6"   -- purple
 local COLOR_CURSED_WARN = "|cffff4444"   -- red
 local COLOR_PARAGON     = "|cff00cc66"   -- green
+local COLOR_PASSIVE     = "|cffa335ee"   -- epic purple
 local COLOR_RESET       = "|r"
 
 -- ============================================================
@@ -57,9 +60,10 @@ local function EnhanceTooltip(tooltip)
     if numLines < 1 then return end
 
     local hasCursed = false
+    local hasPassive = false
     local hasParagon = false
 
-    -- First pass: detect cursed and paragon lines
+    -- First pass: detect cursed, passive, and paragon lines
     for i = 1, numLines do
         local line = _G[tooltip:GetName() .. "TextLeft" .. i]
         if line then
@@ -68,6 +72,9 @@ local function EnhanceTooltip(tooltip)
                 if string.find(text, CURSED_TEXT, 1, true) then
                     hasCursed = true
                 end
+                if string.find(text, PASSIVE_PREFIX, 1, true) then
+                    hasPassive = true
+                end
                 if string.find(text, PARAGON_PREFIX, 1, true) then
                     hasParagon = true
                 end
@@ -75,7 +82,10 @@ local function EnhanceTooltip(tooltip)
         end
     end
 
-    if not hasParagon then
+    -- Items with passive lines are cursed (passives only go on cursed items)
+    local isCursedItem = hasCursed or hasPassive
+
+    if not hasParagon and not isCursedItem then
         ResetTooltipBorder(tooltip)
         return
     end
@@ -86,13 +96,17 @@ local function EnhanceTooltip(tooltip)
         if line then
             local text = line:GetText()
             if text then
-                -- Colorize "Cursed" line
-                if string.find(text, CURSED_TEXT, 1, true) and not string.find(text, PARAGON_PREFIX, 1, true) then
+                -- Colorize "Cursed" marker line (no passive)
+                if string.find(text, CURSED_TEXT, 1, true) and not string.find(text, PASSIVE_PREFIX, 1, true) and not string.find(text, PARAGON_PREFIX, 1, true) then
                     line:SetText(COLOR_CURSED .. ">> CURSED <<" .. COLOR_RESET)
                     line:SetTextColor(0.608, 0.349, 0.714) -- purple
+                -- Colorize "Passive:" lines (cursed items with passive spell)
+                elseif string.find(text, PASSIVE_PREFIX, 1, true) then
+                    line:SetText(COLOR_PASSIVE .. text .. COLOR_RESET)
+                    line:SetTextColor(0.639, 0.208, 0.933) -- epic purple
                 -- Colorize paragon stat lines
                 elseif string.find(text, PARAGON_PREFIX, 1, true) then
-                    if hasCursed then
+                    if isCursedItem then
                         line:SetTextColor(0.608, 0.349, 0.714) -- purple for cursed
                     else
                         line:SetTextColor(0.0, 0.8, 0.4) -- green for normal
@@ -102,8 +116,8 @@ local function EnhanceTooltip(tooltip)
         end
     end
 
-    -- Apply purple border glow for cursed items
-    if hasCursed then
+    -- Apply purple border glow and warning for cursed items
+    if isCursedItem then
         SetCursedBorder(tooltip)
         tooltip:AddLine(" ")
         tooltip:AddLine(COLOR_CURSED_WARN .. "This item is cursed and soulbound." .. COLOR_RESET, 1, 0.267, 0.267, false)
