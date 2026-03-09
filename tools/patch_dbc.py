@@ -15,6 +15,7 @@ The patched DBC should be placed in a client-side MPQ patch file
 import struct
 import sys
 import os
+import re
 
 # DBC format: WDBC header + records + string block
 # SpellItemEnchantment.dbc: 38 fields, 152 bytes per record
@@ -65,6 +66,10 @@ PARAGON_STATS = [
 BASE_ID = 900000
 MAX_AMOUNT = 200
 CURSED_ENCHANT_ID = 920001
+
+# Passive spell enchantment range (950001-950999)
+PASSIVE_ENCHANT_MIN = 950001
+PASSIVE_ENCHANT_MAX = 950999
 
 
 def read_dbc(filepath):
@@ -177,6 +182,58 @@ def generate_paragon_entries(string_block):
     return new_records, bytes(sb)
 
 
+def parse_passive_spells_sql(script_dir):
+    """Parse paragon_passive_spells.sql for spellitemenchantment_dbc INSERTs.
+
+    Returns list of (enchantment_id, name) tuples.
+    """
+    sql_path = os.path.join(script_dir, "..", "data", "sql", "db-world", "paragon_passive_spells.sql")
+    sql_path = os.path.normpath(sql_path)
+    if not os.path.isfile(sql_path):
+        print(f"  Warning: {sql_path} not found — no passive spell entries will be added to client DBC.")
+        return []
+
+    entries = []
+    # Match INSERT INTO spellitemenchantment_dbc ... VALUES\n(ID, ..., 'Name', ...);
+    pattern = re.compile(
+        r"INSERT\s+INTO\s+`?spellitemenchantment_dbc`?\s+.*VALUES\s*\n?"
+        r"\((\d+),.*?'([^']*)'",
+        re.IGNORECASE
+    )
+    with open(sql_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    for m in pattern.finditer(content):
+        ench_id = int(m.group(1))
+        name = m.group(2)
+        if PASSIVE_ENCHANT_MIN <= ench_id <= PASSIVE_ENCHANT_MAX:
+            entries.append((ench_id, name))
+
+    return entries
+
+
+def generate_passive_spell_entries(string_block, passive_spells):
+    """Generate DBC records for passive spell enchantments.
+
+    Uses Effect=0 (name-only display) in the client DBC.
+    The server applies the actual spell via its own spellitemenchantment_dbc table (Effect=3).
+    """
+    new_records = []
+    sb = bytearray(string_block)
+
+    for ench_id, name in passive_spells:
+        name_offset = len(sb)
+        sb.extend(name.encode('utf-8'))
+        sb.append(0)
+
+        fields = [0] * FIELDS_PER_RECORD
+        fields[0] = ench_id
+        fields[14] = name_offset  # Name_Lang_enUS
+        new_records.append(fields)
+
+    return new_records, bytes(sb)
+
+
 def main():
     if len(sys.argv) < 3:
         print(f"Usage: {sys.argv[0]} <original_dbc> <output_dbc>")
@@ -196,16 +253,27 @@ def main():
     print(f"  Original string block: {len(string_block)} bytes")
 
     # Check for existing paragon entries and remove them
+    def is_paragon_id(rid):
+        return (BASE_ID < rid <= CURSED_ENCHANT_ID) or (PASSIVE_ENCHANT_MIN <= rid <= PASSIVE_ENCHANT_MAX)
+
     existing_ids = {r[0] for r in records}
-    paragon_existing = [rid for rid in existing_ids if BASE_ID < rid <= CURSED_ENCHANT_ID]
+    paragon_existing = [rid for rid in existing_ids if is_paragon_id(rid)]
     if paragon_existing:
         print(f"  Removing {len(paragon_existing)} existing paragon entries...")
-        records = [r for r in records if not (BASE_ID < r[0] <= CURSED_ENCHANT_ID)]
+        records = [r for r in records if not is_paragon_id(r[0])]
 
-    # Generate paragon entries
+    # Generate stat enchantment entries
     total_entries = len(PARAGON_STATS) * MAX_AMOUNT
-    print(f"Generating {total_entries} paragon enchantment entries...")
+    print(f"Generating {total_entries} stat enchantment entries...")
     new_records, string_block = generate_paragon_entries(string_block)
+
+    # Parse and generate passive spell entries from SQL
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    passive_spells = parse_passive_spells_sql(script_dir)
+    if passive_spells:
+        print(f"Generating {len(passive_spells)} passive spell enchantment entries...")
+        passive_records, string_block = generate_passive_spell_entries(string_block, passive_spells)
+        new_records.extend(passive_records)
 
     # Merge and sort by ID
     all_records = records + new_records
