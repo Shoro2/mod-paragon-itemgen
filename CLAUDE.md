@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Zentrales Projekt-Wiki**: Dieses Modul ist Teil eines Multi-Repo WoW-Server-Projekts. Die übergreifende Dokumentation, Änderungshistorie und Projektpläne befinden sich im [share-public](https://github.com/Shoro2/share-public) Repository:
+> - [`CLAUDE.md`](https://github.com/Shoro2/share-public/blob/main/CLAUDE.md) — Gesamtarchitektur, SpellScript/DBC-Referenz, alle Custom-IDs, Modul-Übersicht
+> - [`claude_log.md`](https://github.com/Shoro2/share-public/blob/main/claude_log.md) — Änderungshistorie, Projektpläne, priorisierte TODOs
+>
+> **Alle Änderungen an diesem oder den anderen Repos müssen dort geloggt werden.**
+
 ## Project Overview
 
 **mod-paragon-itemgen** is an AzerothCore module that applies bonus stat enchantments to weapons and armor based on the player's Paragon level (from [mod-paragon](https://github.com/Shoro2/mod-paragon)). Items receive up to 5 enchantment slots filled with role-appropriate stats when looted, crafted, quest-rewarded, or vendor-purchased.
