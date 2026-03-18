@@ -119,12 +119,17 @@ static ParagonStatIndex const TANK_COMBAT_RATINGS[] = {
 };
 static constexpr uint8 TANK_COMBAT_RATINGS_COUNT = 6;
 
-static ParagonStatIndex const DPS_COMBAT_RATINGS[] = {
+static ParagonStatIndex const MELEE_DPS_COMBAT_RATINGS[] = {
     PSTAT_CRIT_RATING, PSTAT_HASTE_RATING, PSTAT_HIT_RATING,
-    PSTAT_ARMOR_PENETRATION, PSTAT_EXPERTISE_RATING, PSTAT_ATTACK_POWER,
-    PSTAT_SPELL_POWER
+    PSTAT_ARMOR_PENETRATION, PSTAT_EXPERTISE_RATING, PSTAT_ATTACK_POWER
 };
-static constexpr uint8 DPS_COMBAT_RATINGS_COUNT = 7;
+static constexpr uint8 MELEE_DPS_COMBAT_RATINGS_COUNT = 6;
+
+static ParagonStatIndex const CASTER_DPS_COMBAT_RATINGS[] = {
+    PSTAT_CRIT_RATING, PSTAT_HASTE_RATING, PSTAT_HIT_RATING,
+    PSTAT_SPELL_POWER, PSTAT_MANA_REGENERATION
+};
+static constexpr uint8 CASTER_DPS_COMBAT_RATINGS_COUNT = 5;
 
 static ParagonStatIndex const HEALER_COMBAT_RATINGS[] = {
     PSTAT_CRIT_RATING, PSTAT_HASTE_RATING, PSTAT_SPELL_POWER,
@@ -238,7 +243,8 @@ static PlayerRoleInfo GetPlayerRoleInfo(Player* player)
     return info;
 }
 
-static ParagonStatIndex const* GetCombatRatingPool(ParagonRole role, uint8& outCount)
+static ParagonStatIndex const* GetCombatRatingPool(ParagonRole role,
+    ParagonStatIndex mainStat, uint8& outCount)
 {
     switch (role)
     {
@@ -246,21 +252,28 @@ static ParagonStatIndex const* GetCombatRatingPool(ParagonRole role, uint8& outC
             outCount = TANK_COMBAT_RATINGS_COUNT;
             return TANK_COMBAT_RATINGS;
         case ROLE_DPS:
-            outCount = DPS_COMBAT_RATINGS_COUNT;
-            return DPS_COMBAT_RATINGS;
+            // Split by main stat: Int/Spi = caster, Str/Agi = melee
+            if (mainStat == PSTAT_INTELLECT || mainStat == PSTAT_SPIRIT)
+            {
+                outCount = CASTER_DPS_COMBAT_RATINGS_COUNT;
+                return CASTER_DPS_COMBAT_RATINGS;
+            }
+            outCount = MELEE_DPS_COMBAT_RATINGS_COUNT;
+            return MELEE_DPS_COMBAT_RATINGS;
         case ROLE_HEALER:
             outCount = HEALER_COMBAT_RATINGS_COUNT;
             return HEALER_COMBAT_RATINGS;
         default:
-            outCount = DPS_COMBAT_RATINGS_COUNT;
-            return DPS_COMBAT_RATINGS;
+            outCount = MELEE_DPS_COMBAT_RATINGS_COUNT;
+            return MELEE_DPS_COMBAT_RATINGS;
     }
 }
 
-static void PickTwoRandomRatings(ParagonRole role, ParagonStatIndex& out1, ParagonStatIndex& out2)
+static void PickTwoRandomRatings(ParagonRole role, ParagonStatIndex mainStat,
+    ParagonStatIndex& out1, ParagonStatIndex& out2)
 {
     uint8 poolSize = 0;
-    ParagonStatIndex const* pool = GetCombatRatingPool(role, poolSize);
+    ParagonStatIndex const* pool = GetCombatRatingPool(role, mainStat, poolSize);
 
     // Thread-local RNG
     static thread_local std::mt19937 rng(std::random_device{}());
@@ -564,7 +577,7 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
 
     // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
     ParagonStatIndex cr1, cr2;
-    PickTwoRandomRatings(roleInfo.role, cr1, cr2);
+    PickTwoRandomRatings(roleInfo.role, roleInfo.mainStat, cr1, cr2);
 
     uint32 staAmount, mainAmount, cr1Amount, cr2Amount;
 
@@ -599,6 +612,14 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         LOG_DEBUG("module", "ParagonItemGen: Random rolls for player {} - "
             "Sta={}, Main={}, CR1={}, CR2={} (max={})",
             player->GetName(), staAmount, mainAmount, cr1Amount, cr2Amount, maxStatAmount);
+    }
+
+    // Check if item has random properties ("of the Bear" etc.) that will be overwritten
+    if (item->GetItemRandomPropertyId() != 0)
+    {
+        LOG_DEBUG("module", "ParagonItemGen: Item {} (entry {}) has random property ID {}, "
+            "paragon enchantments will override PROP_ENCHANTMENT slots",
+            item->GetGUID().GetCounter(), item->GetEntry(), item->GetItemRandomPropertyId());
     }
 
     // Slot 0 (7): Stamina - always
@@ -715,6 +736,12 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
         ChatHandler(player->GetSession()).PSendSysMessage(
             "|cff00ff00[Paragon]|r Item enhanced (Paragon Level {}). Sta: +{}, Main: +{}, CR1: +{}, CR2: +{}{}",
             paragonLevel, staAmount, mainAmount, cr1Amount, cr2Amount, specHint);
+    }
+
+    if (item->GetItemRandomPropertyId() != 0)
+    {
+        ChatHandler(player->GetSession()).PSendSysMessage(
+            "|cff00ff00[Paragon]|r Random properties on this item have been replaced by Paragon enchantments.");
     }
 }
 

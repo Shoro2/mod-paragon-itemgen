@@ -33,8 +33,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Role | Pool (ParagonStatIndex values) |
 |------|-------------------------------|
 | Tank (0) | Dodge(5), Parry(6), Defense(7), Block(8), Hit(9), Expertise(12) |
-| DPS (1) | Crit(10), Haste(11), Hit(9), ArmorPen(13), Expertise(12), AP(15), SP(14) |
+| DPS Melee (1, Str/Agi main) | Crit(10), Haste(11), Hit(9), ArmorPen(13), Expertise(12), AP(15) |
+| DPS Caster (1, Int/Spi main) | Crit(10), Haste(11), Hit(9), SpellPower(14), ManaRegen(16) |
 | Healer (2) | Crit(10), Haste(11), SpellPower(14), ManaRegen(16) |
+
+DPS pool is automatically selected based on the player's chosen main stat: Strength/Agility → melee pool, Intellect/Spirit → caster pool.
 
 ## File Structure
 
@@ -230,8 +233,8 @@ Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
 
 3. **In-memory caching**: Paragon level and role info are queried from DB on every item acquisition. For high-traffic servers, cache in player data map.
 
-4. **PROP_ENCHANTMENT_SLOT conflict**: Items with random properties ("of the Bear", etc.) will have those replaced by paragon enchantments. May want to only apply to items without existing PROP enchantments, or intentionally override.
+4. ~~**PROP_ENCHANTMENT_SLOT conflict**~~: FIXED — Items with random properties ("of the Bear") are intentionally overridden by paragon enchantments, with a chat notification to the player.
 
-5. **No prepared statements**: DB queries use string-formatted `.Query()`/`.Execute()`. Should migrate to `CharacterDatabasePreparedStatement` for production use.
+5. ~~**No prepared statements**~~: FIXED — All DB queries migrated to `CharacterDatabasePreparedStatement` / `WorldDatabasePreparedStatement`.
 
-6. **Combat rating pool overlap**: DPS pool contains both Attack Power and Spell Power. A physical DPS could roll Spell Power. Consider splitting into melee DPS and caster DPS pools, or filtering by class.
+6. ~~**Combat rating pool overlap**~~: FIXED — DPS pool split into melee (Str/Agi main: Crit, Haste, Hit, ArmorPen, Expertise, AP) and caster (Int/Spi main: Crit, Haste, Hit, SP, ManaRegen). Pool selected automatically based on player's main stat.
