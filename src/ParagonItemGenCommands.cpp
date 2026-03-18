@@ -11,6 +11,7 @@
 #include "Chat.h"
 #include "Player.h"
 #include "DatabaseEnv.h"
+#include "CharacterDatabase.h"
 
 using namespace Acore::ChatCommands;
 
@@ -73,10 +74,11 @@ static bool HandleParagonRoleCommand(ChatHandler* handler, Tail args)
     }
 
     // Update or insert role, preserve mainStat
-    CharacterDatabase.Execute(
-        "INSERT INTO character_paragon_role (characterID, role) VALUES ({}, {}) "
-        "ON DUPLICATE KEY UPDATE role = {}",
-        player->GetGUID().GetCounter(), static_cast<uint8>(role), static_cast<uint8>(role));
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_PARAGON_ROLE);
+    stmt->SetData(0, player->GetGUID().GetCounter());
+    stmt->SetData(1, static_cast<uint8>(role));
+    stmt->SetData(2, static_cast<uint8>(role));
+    CharacterDatabase.Execute(stmt);
 
     handler->PSendSysMessage("|cff00ff00[Paragon]|r Role set to: |cffffffff{}|r. New items will use this role.",
         RoleToString(role));
@@ -114,10 +116,11 @@ static bool HandleParagonStatCommand(ChatHandler* handler, Tail args)
         return true;
     }
 
-    CharacterDatabase.Execute(
-        "INSERT INTO character_paragon_role (characterID, mainStat) VALUES ({}, {}) "
-        "ON DUPLICATE KEY UPDATE mainStat = {}",
-        player->GetGUID().GetCounter(), mainStatMod, mainStatMod);
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_PARAGON_ROLE_MAINSTAT);
+    stmt->SetData(0, player->GetGUID().GetCounter());
+    stmt->SetData(1, mainStatMod);
+    stmt->SetData(2, mainStatMod);
+    CharacterDatabase.Execute(stmt);
 
     handler->PSendSysMessage("|cff00ff00[Paragon]|r Main stat set to: |cffffffff{}|r. New items will use this stat.",
         MainStatToString(mainStatMod));
@@ -130,9 +133,9 @@ static bool HandleParagonInfoCommand(ChatHandler* handler, Tail /*args*/)
     if (!player)
         return false;
 
-    QueryResult result = CharacterDatabase.Query(
-        "SELECT role, mainStat FROM character_paragon_role WHERE characterID = {}",
-        player->GetGUID().GetCounter());
+    CharacterDatabasePreparedStatement* roleStmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_ROLE);
+    roleStmt->SetData(0, player->GetGUID().GetCounter());
+    PreparedQueryResult result = CharacterDatabase.Query(roleStmt);
 
     if (!result)
     {
@@ -159,9 +162,9 @@ static bool HandleParagonInfoCommand(ChatHandler* handler, Tail /*args*/)
     handler->PSendSysMessage("  Combat Rating Pool: |cffffffff{}|r", poolDesc);
 
     // Show current spec
-    QueryResult specResult = CharacterDatabase.Query(
-        "SELECT `specId` FROM `character_paragon_spec` WHERE `characterId` = {}",
-        player->GetGUID().GetCounter());
+    CharacterDatabasePreparedStatement* specStmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_SPEC);
+    specStmt->SetData(0, player->GetGUID().GetCounter());
+    PreparedQueryResult specResult = CharacterDatabase.Query(specStmt);
 
     if (specResult)
     {

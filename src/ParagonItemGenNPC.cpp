@@ -13,6 +13,7 @@
 #include "Player.h"
 #include "ScriptedGossip.h"
 #include "DatabaseEnv.h"
+#include "CharacterDatabase.h"
 #include "Chat.h"
 
 // ============================================================
@@ -115,9 +116,9 @@ public:
     {
         // Get current spec
         ParagonSpec currentSpec = SPEC_NONE;
-        QueryResult result = CharacterDatabase.Query(
-            "SELECT `specId` FROM `character_paragon_spec` WHERE `characterId` = {}",
-            player->GetGUID().GetCounter());
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_SPEC);
+        stmt->SetData(0, player->GetGUID().GetCounter());
+        PreparedQueryResult result = CharacterDatabase.Query(stmt);
 
         if (result)
             currentSpec = static_cast<ParagonSpec>((*result)[0].Get<uint8>());
@@ -190,9 +191,10 @@ public:
         }
 
         // Save to DB
-        CharacterDatabase.Execute(
-            "REPLACE INTO `character_paragon_spec` (`characterId`, `specId`) VALUES ({}, {})",
-            player->GetGUID().GetCounter(), static_cast<uint8>(selectedSpec));
+        CharacterDatabasePreparedStatement* specStmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_PARAGON_SPEC);
+        specStmt->SetData(0, player->GetGUID().GetCounter());
+        specStmt->SetData(1, static_cast<uint8>(selectedSpec));
+        CharacterDatabase.Execute(specStmt);
 
         ChatHandler(player->GetSession()).PSendSysMessage(
             "|cff00ff00[Paragon]|r Spec set to: |cffffffff{}|r. New items will use this spec for passive spell effects.",
