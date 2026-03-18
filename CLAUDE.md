@@ -2,9 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Zentrales Projekt-Wiki**: Dieses Modul ist Teil eines Multi-Repo WoW-Server-Projekts. Die übergreifende Dokumentation, Änderungshistorie und Projektpläne befinden sich im [share-public](https://github.com/Shoro2/share-public) Repository:
-> - [`CLAUDE.md`](https://github.com/Shoro2/share-public/blob/main/CLAUDE.md) — Gesamtarchitektur, SpellScript/DBC-Referenz, alle Custom-IDs, Modul-Übersicht
+> **Zentrales Projekt-Wiki**: Dieses Modul ist Teil eines Multi-Repo WoW-Server-Projekts. Die übergreifende Dokumentation, Zusatzinfos und Python-Tools befinden sich im [share-public](https://github.com/Shoro2/share-public) Repository:
+> - [`CLAUDE.md`](https://github.com/Shoro2/share-public/blob/main/CLAUDE.md) — Gesamtarchitektur, SpellScript/DBC-Referenz, alle Custom-IDs, Modul-Übersicht, **komplette DB-Struktur (304 Tabellen)**, **DBC-Inventar (246 Dateien)**
 > - [`claude_log.md`](https://github.com/Shoro2/share-public/blob/main/claude_log.md) — Änderungshistorie, Projektpläne, priorisierte TODOs
+> - [`python_scripts/`](https://github.com/Shoro2/share-public/tree/main/python_scripts) — DBC-Patching-Tools (`patch_dbc.py`, `copy_spells_dbc.py`), Paragon-Spell-Generator (`add_paragon_spell.py`), Load-Testing (`socket_stress_heavy.py`)
+> - [`dbc/`](https://github.com/Shoro2/share-public/tree/main/dbc) — Alle 246 WoW-Client DBC-Dateien (Spell.dbc, SpellItemEnchantment.dbc, etc.)
+> - [`mysqldbextracts/`](https://github.com/Shoro2/share-public/tree/main/mysqldbextracts) — Komplette DB-Spaltenstruktur (`mysql_column_list_all.txt`), CSV-Exporte (`creature_template.csv`, `item_template.csv`)
 >
 > **Alle Änderungen an diesem oder den anderen Repos müssen dort geloggt werden.**
 
@@ -217,7 +220,7 @@ Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
 
 ### Client-side Setup
 
-1. Run `tools/patch_dbc.py` on the already-patched (or original) `SpellItemEnchantment.dbc` — the script auto-removes old paragon entries before adding new ones (including the Cursed marker and passive spell enchantments)
+1. Run `python_scripts/patch_dbc.py` (im [share-public](https://github.com/Shoro2/share-public/tree/main/python_scripts) Repo) auf die originale oder bereits gepatchte `SpellItemEnchantment.dbc` — das Script entfernt alte Paragon-Einträge automatisch bevor neue hinzugefügt werden (inkl. Cursed Marker und Passive Spell Enchantments)
 2. Copy `Paragon_System_LUA/ItemGen_Client.lua` and `ItemGen_Server.lua` to the server's `lua_scripts/` folder (requires AIO)
 
 ## Known Issues and TODOs
