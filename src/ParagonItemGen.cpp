@@ -24,6 +24,8 @@
 #include "Config.h"
 #include "Chat.h"
 #include "DatabaseEnv.h"
+#include "CharacterDatabase.h"
+#include "WorldDatabase.h"
 #include "DBCStores.h"
 #include "ObjectGuid.h"
 #include <random>
@@ -175,9 +177,9 @@ static bool ItemHasParagonEnchantment(Item* item)
 
 static uint32 GetPlayerParagonLevel(Player* player)
 {
-    QueryResult result = CharacterDatabase.Query(
-        "SELECT level FROM character_paragon WHERE accountID = {}",
-        player->GetSession()->GetAccountId());
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_LEVEL);
+    stmt->SetData(0, player->GetSession()->GetAccountId());
+    PreparedQueryResult result = CharacterDatabase.Query(stmt);
 
     if (!result)
     {
@@ -203,9 +205,9 @@ static PlayerRoleInfo GetPlayerRoleInfo(Player* player)
 {
     PlayerRoleInfo info = { ROLE_DPS, PSTAT_STRENGTH, false };
 
-    QueryResult result = CharacterDatabase.Query(
-        "SELECT role, mainStat FROM character_paragon_role WHERE characterID = {}",
-        player->GetGUID().GetCounter());
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_ROLE);
+    stmt->SetData(0, player->GetGUID().GetCounter());
+    PreparedQueryResult result = CharacterDatabase.Query(stmt);
 
     if (!result)
     {
@@ -291,12 +293,8 @@ static void LoadPassiveSpellPool()
     sSpecPools.clear();
 
     // JOIN the assignment table with the pool catalog to get per-spec entries
-    QueryResult result = WorldDatabase.Query(
-        "SELECT a.`specId`, a.`enchantmentId`, p.`name`, a.`weight`, "
-        "p.`minParagonLevel`, p.`minItemLevel` "
-        "FROM `paragon_spec_spell_assign` a "
-        "INNER JOIN `paragon_passive_spell_pool` p ON a.`enchantmentId` = p.`enchantmentId` "
-        "ORDER BY a.`specId`, a.`enchantmentId`");
+    WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_PARAGON_SPEC_SPELL_ASSIGN);
+    PreparedQueryResult result = WorldDatabase.Query(stmt);
 
     if (!result)
     {
@@ -338,9 +336,9 @@ static void LoadPassiveSpellPool()
 
 static ParagonSpec GetPlayerSpec(Player* player)
 {
-    QueryResult result = CharacterDatabase.Query(
-        "SELECT `specId` FROM `character_paragon_spec` WHERE `characterId` = {}",
-        player->GetGUID().GetCounter());
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_SPEC);
+    stmt->SetData(0, player->GetGUID().GetCounter());
+    PreparedQueryResult result = CharacterDatabase.Query(stmt);
 
     if (!result)
         return SPEC_NONE;
@@ -660,14 +658,17 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
     uint32 dbStatAmount = isCursed ? staAmount : maxStatAmount;
 
     // Track in DB for trade restrictions
-    CharacterDatabase.Execute(
-        "REPLACE INTO character_paragon_item (itemGuid, paragonLevel, role, mainStat, "
-        "combatRating1, combatRating2, statAmount, cursed, passiveSpellEnchantId) "
-        "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})",
-        item->GetGUID().GetCounter(), paragonLevel,
-        static_cast<uint8>(roleInfo.role), static_cast<uint8>(roleInfo.mainStat),
-        static_cast<uint8>(cr1), static_cast<uint8>(cr2), dbStatAmount,
-        isCursed ? 1 : 0, passiveEnchantId);
+    CharacterDatabasePreparedStatement* trackStmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_PARAGON_ITEM);
+    trackStmt->SetData(0, item->GetGUID().GetCounter());
+    trackStmt->SetData(1, paragonLevel);
+    trackStmt->SetData(2, static_cast<uint8>(roleInfo.role));
+    trackStmt->SetData(3, static_cast<uint8>(roleInfo.mainStat));
+    trackStmt->SetData(4, static_cast<uint8>(cr1));
+    trackStmt->SetData(5, static_cast<uint8>(cr2));
+    trackStmt->SetData(6, dbStatAmount);
+    trackStmt->SetData(7, isCursed ? static_cast<uint8>(1) : static_cast<uint8>(0));
+    trackStmt->SetData(8, passiveEnchantId);
+    CharacterDatabase.Execute(trackStmt);
 
     LOG_INFO("module", "ParagonItemGen: Enhanced item {} (entry {}) for player {} - "
         "PLevel={}, Role={}, MainStat={}, CR1={}, CR2={}, Sta={}, Main={}, CR1Amt={}, CR2Amt={}, Cursed={}",
@@ -777,9 +778,9 @@ public:
         if (!ItemHasParagonEnchantment(tradedItem))
             return true;
 
-        QueryResult result = CharacterDatabase.Query(
-            "SELECT paragonLevel FROM character_paragon_item WHERE itemGuid = {}",
-            tradedItem->GetGUID().GetCounter());
+        CharacterDatabasePreparedStatement* itemStmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_ITEM_LEVEL);
+        itemStmt->SetData(0, tradedItem->GetGUID().GetCounter());
+        PreparedQueryResult result = CharacterDatabase.Query(itemStmt);
 
         if (!result)
             return true;
@@ -818,20 +819,18 @@ public:
         if (!ItemHasParagonEnchantment(item))
             return true;
 
-        QueryResult itemResult = CharacterDatabase.Query(
-            "SELECT paragonLevel FROM character_paragon_item WHERE itemGuid = {}",
-            item->GetGUID().GetCounter());
+        CharacterDatabasePreparedStatement* itemStmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_ITEM_LEVEL);
+        itemStmt->SetData(0, item->GetGUID().GetCounter());
+        PreparedQueryResult itemResult = CharacterDatabase.Query(itemStmt);
 
         if (!itemResult)
             return true;
 
         uint32 itemParagonLevel = (*itemResult)[0].Get<uint32>();
 
-        QueryResult charResult = CharacterDatabase.Query(
-            "SELECT cp.level FROM character_paragon cp "
-            "INNER JOIN characters c ON c.account = cp.accountID "
-            "WHERE c.guid = {}",
-            receiverGuid.GetCounter());
+        CharacterDatabasePreparedStatement* charStmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PARAGON_LEVEL_BY_CHAR);
+        charStmt->SetData(0, receiverGuid.GetCounter());
+        PreparedQueryResult charResult = CharacterDatabase.Query(charStmt);
 
         uint32 receiverParagonLevel = 0;
         if (charResult)
