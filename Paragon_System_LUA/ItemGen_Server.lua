@@ -41,6 +41,33 @@ end
 LoadPassiveNames()
 
 -- ============================================================
+-- Reading PROP_ENCHANTMENT slots (7-11) via raw UpdateFields
+--
+-- Eluna's GetEnchantmentId() only allows slots 0-6
+-- (MAX_INSPECTED_ENCHANTMENT_SLOT). We use GetUInt32Value()
+-- to read the enchantment IDs from the item's UpdateFields.
+--
+-- UpdateField layout (from UpdateFields.h):
+--   ITEM_FIELD_ENCHANTMENT_1_1 = OBJECT_END + 0x0010 = 0x0016 = 22
+--   Each slot occupies 3 uint32 fields (ID, duration, charges)
+--   Enchantment ID for slot S = field index 22 + S * 3
+--
+-- PROP_ENCHANTMENT slots:
+--   Slot 7  → field 43  (ITEM_FIELD_ENCHANTMENT_8_1)
+--   Slot 8  → field 46  (ITEM_FIELD_ENCHANTMENT_9_1)
+--   Slot 9  → field 49  (ITEM_FIELD_ENCHANTMENT_10_1)
+--   Slot 10 → field 52  (ITEM_FIELD_ENCHANTMENT_11_1)
+--   Slot 11 → field 55  (ITEM_FIELD_ENCHANTMENT_12_1)
+-- ============================================================
+
+local ENCH_FIELD_BASE = 22  -- ITEM_FIELD_ENCHANTMENT_1_1
+local ENCH_FIELD_STEP = 3   -- fields per enchantment slot
+
+local function GetPropEnchantId(item, enchSlot)
+	return item:GetUInt32Value(ENCH_FIELD_BASE + enchSlot * ENCH_FIELD_STEP)
+end
+
+-- ============================================================
 -- Enchantment decoding
 -- ============================================================
 
@@ -61,17 +88,17 @@ end
 
 local function BuildItemData(item)
 	-- Slot 7 must contain a paragon stat enchant (stamina)
-	local slot7 = item:GetEnchantmentId(7)
+	local slot7 = GetPropEnchantId(item, 7)
 	if not IsParagonStatEnchant(slot7) then
 		return nil
 	end
 
-	local _, staAmt  = DecodeStatEnchant(slot7)
-	local mi, mainAmt = DecodeStatEnchant(item:GetEnchantmentId(8))
-	local c1i, c1Amt  = DecodeStatEnchant(item:GetEnchantmentId(9))
-	local c2i, c2Amt  = DecodeStatEnchant(item:GetEnchantmentId(10))
+	local _, staAmt   = DecodeStatEnchant(slot7)
+	local mi, mainAmt = DecodeStatEnchant(GetPropEnchantId(item, 8))
+	local c1i, c1Amt  = DecodeStatEnchant(GetPropEnchantId(item, 9))
+	local c2i, c2Amt  = DecodeStatEnchant(GetPropEnchantId(item, 10))
 
-	local slot11 = item:GetEnchantmentId(11)
+	local slot11 = GetPropEnchantId(item, 11)
 	local cursed = false
 	local passiveName = nil
 
