@@ -40,7 +40,7 @@ static bool   conf_OnLoot          = true;
 static bool   conf_OnCreate        = true;
 static bool   conf_OnQuest         = true;
 static bool   conf_OnVendor        = true;
-static float  conf_ScalingFactor   = 0.5f;
+static float  conf_ScalingFactor   = 8.0f / 15.0f; // ~0.5333: cursed legendary at paragon 666 = 666 stats
 static float  conf_QualityMult[6]  = { 0.0f, 0.0f, 0.5f, 0.75f, 1.0f, 1.25f };
 static uint32 conf_MinParagonLevel = 1;
 static uint32 conf_MinItemLevel    = 150;

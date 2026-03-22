@@ -36,9 +36,12 @@ ParagonItemGen.OnQuest  = 1
 ParagonItemGen.OnVendor = 1
 
 # Scaling formula: statAmount = ceil(paragonLevel * ScalingFactor * QualityMult)
+# Tuned so that cursed legendary at max paragon level (666) hits exactly +666 stats.
 # Example at Paragon Level 20:
-#   Uncommon: +5 per stat | Rare: +8 | Epic: +10 | Legendary: +13
-ParagonItemGen.ScalingFactor = 0.5
+#   Uncommon: +6 per stat | Rare: +8 | Epic: +11 | Legendary: +14
+# At Paragon Level 666:
+#   Legendary: +444 (normal) | +666 (cursed)
+ParagonItemGen.ScalingFactor = 0.533333
 
 # Quality multipliers
 ParagonItemGen.QualityMult.Uncommon  = 0.5
