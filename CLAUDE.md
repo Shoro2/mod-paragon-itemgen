@@ -55,8 +55,8 @@ mod-paragon-itemgen/
 │   └── db-world/
 │       └── paragon_itemgen_enchantments.sql  # 11323 spellitemenchantment_dbc entries (11322 stats + 1 cursed)
 ├── Paragon_System_LUA/
-│   ├── ItemGen_Client.lua            # AIO client addon: tooltip enhancement for cursed items
-│   └── ItemGen_Server.lua            # AIO server: registers client addon
+│   ├── ItemGen_Client.lua            # AIO client addon: tooltip display (AIO data + DBC fallback)
+│   └── ItemGen_Server.lua            # AIO server: reads enchantment slots, sends data to client
 ├── src/
 │   ├── MP_loader.cpp                 # Module entry point (Addmod_paragon_itemgenScripts)
 │   ├── ParagonItemGen.h              # Header: constants, enums (ParagonStatIndex, ParagonRole)
@@ -216,12 +216,14 @@ Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
 - **Passive spell** (slot 11): If the player has a spec set, a passive spell from the spec's pool is rolled and applied as an equip-spell enchantment (IDs 950001–950099). This is the cursed item's bonus reward.
 - **Cursed marker** (slot 11): If no passive spell was rolled (no spec set, passive disabled, etc.), the "Cursed" label enchantment (ID 920001) is applied instead.
 - **Normal items** do NOT receive passive spells — passives are exclusive to cursed items.
-- **AIO Lua addon** enhances the tooltip: detects "Cursed" or "Passive:" text, colorizes lines purple, applies purple border glow, and adds a red warning line.
+- **AIO Lua addon** displays stats and cursed status in tooltips via two methods:
+  1. **AIO data** (primary): Server reads enchantment IDs directly from item PROP_ENCHANTMENT slots, decodes stat type + amount from the ID formula, and sends to client via AIO on login and inventory changes. Works **without client DBC patching**.
+  2. **DBC text fallback**: Scans tooltip for "Paragon +", "Cursed", "Passive:" text from `SpellItemEnchantment.dbc` `Name_Lang_enUS` field. Covers non-inventory tooltips (loot, quest, vendor). Requires patched client DBC.
 
 ### Client-side Setup
 
-1. Run `python_scripts/patch_dbc.py` (im [share-public](https://github.com/Shoro2/share-public/tree/main/python_scripts) Repo) auf die originale oder bereits gepatchte `SpellItemEnchantment.dbc` — das Script entfernt alte Paragon-Einträge automatisch bevor neue hinzugefügt werden (inkl. Cursed Marker und Passive Spell Enchantments)
-2. Copy `Paragon_System_LUA/ItemGen_Client.lua` and `ItemGen_Server.lua` to the server's `lua_scripts/` folder (requires AIO)
+1. Copy `Paragon_System_LUA/ItemGen_Client.lua` and `ItemGen_Server.lua` to the server's `lua_scripts/` folder (requires AIO)
+2. **Optional**: Run `python_scripts/patch_dbc.py` (im [share-public](https://github.com/Shoro2/share-public/tree/main/python_scripts) Repo) für erweiterte Tooltip-Anzeige bei Loot/Quest/Vendor-Items (ohne Patch funktioniert nur die AIO-basierte Anzeige für Inventar/Equipment)
 
 ## Known Issues and TODOs
 
@@ -241,3 +243,5 @@ Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
 5. ~~**No prepared statements**~~: FIXED — All DB queries migrated to `CharacterDatabasePreparedStatement` / `WorldDatabasePreparedStatement`.
 
 6. ~~**Combat rating pool overlap**~~: FIXED — DPS pool split into melee (Str/Agi main: Crit, Haste, Hit, ArmorPen, Expertise, AP) and caster (Int/Spi main: Crit, Haste, Hit, SP, ManaRegen). Pool selected automatically based on player's main stat.
+
+7. ~~**Tooltip display requires client DBC patching**~~: FIXED — AIO-based tooltip system reads enchantment data from item PROP_ENCHANTMENT slots on the server, decodes stat type + amount from the enchantment ID formula (`900000 + statIndex * 1000 + amount`), and sends to the client via AIO. Client displays stats, cursed markers, and passive spells without requiring SpellItemEnchantment.dbc to be patched. DBC text scanning kept as fallback for non-inventory tooltips (loot, quest, vendor).
