@@ -1,3 +1,28 @@
+-- ============================================================================
+-- Schema for paragon_passive_spells tables.
+-- Added to fix first-run error: the INSERTs below previously failed with
+-- "Table 'acore_world.paragon_passive_spell_pool' doesn't exist" on fresh
+-- servers because the tables were never created anywhere in the module.
+-- IF NOT EXISTS keeps this idempotent for existing installations.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS `paragon_passive_spell_pool` (
+  `enchantmentId`   INT UNSIGNED     NOT NULL,
+  `spellId`         INT UNSIGNED     NOT NULL DEFAULT 0,
+  `name`            VARCHAR(100)     NOT NULL DEFAULT '',
+  `category`        INT UNSIGNED     NOT NULL DEFAULT 0,
+  `minParagonLevel` INT UNSIGNED     NOT NULL DEFAULT 1,
+  `minItemLevel`    INT UNSIGNED     NOT NULL DEFAULT 0,
+  PRIMARY KEY (`enchantmentId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `paragon_spec_spell_assign` (
+  `specId`        TINYINT UNSIGNED NOT NULL,
+  `enchantmentId` INT UNSIGNED     NOT NULL,
+  `weight`        INT UNSIGNED     NOT NULL DEFAULT 100,
+  PRIMARY KEY (`specId`, `enchantmentId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =============================================================
 -- Paragon Item Passive Spell Effects
 -- Custom spells, enchantments, spec-spell assignments, and NPC
