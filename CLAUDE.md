@@ -1,247 +1,97 @@
-# CLAUDE.md
+# mod-paragon-itemgen
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> Lies zuerst [`INDEX.md`](./INDEX.md). Mechanik, Hooks, Skalierungs-Formel: [`functions.md`](./functions.md). Folder-Layout: [`data_structure.md`](./data_structure.md). Offenes: [`todo.md`](./todo.md). Commit-Spur: [`log.md`](./log.md).
 
-> **Zentrales Projekt-Wiki**: Dieses Modul ist Teil eines Multi-Repo WoW-Server-Projekts. Die übergreifende Dokumentation, Zusatzinfos und Python-Tools befinden sich im [share-public](https://github.com/Shoro2/share-public) Repository:
-> - [`CLAUDE.md`](https://github.com/Shoro2/share-public/blob/main/CLAUDE.md) — Gesamtarchitektur, SpellScript/DBC-Referenz, alle Custom-IDs, Modul-Übersicht, **komplette DB-Struktur (304 Tabellen)**, **DBC-Inventar (246 Dateien)**
-> - [`claude_log.md`](https://github.com/Shoro2/share-public/blob/main/claude_log.md) — Änderungshistorie, Projektpläne, priorisierte TODOs
-> - [`python_scripts/`](https://github.com/Shoro2/share-public/tree/main/python_scripts) — DBC-Patching-Tools (`patch_dbc.py`, `copy_spells_dbc.py`), Paragon-Spell-Generator (`add_paragon_spell.py`), Load-Testing (`socket_stress_heavy.py`)
-> - [`dbc/`](https://github.com/Shoro2/share-public/tree/main/dbc) — Alle 246 WoW-Client DBC-Dateien (Spell.dbc, SpellItemEnchantment.dbc, etc.)
-> - [`mysqldbextracts/`](https://github.com/Shoro2/share-public/tree/main/mysqldbextracts) — Komplette DB-Spaltenstruktur (`mysql_column_list_all.txt`), CSV-Exporte (`creature_template.csv`, `item_template.csv`)
->
-> **Alle Änderungen an diesem oder den anderen Repos müssen dort geloggt werden.**
+## Was ist das Modul?
 
-## Project Overview
+AzerothCore-Modul für **WoW 3.3.5a (WotLK)**. Wendet beim Looten / Craften / Quest-Reward / Vendor-Kauf automatisch **Bonus-Stat-Enchantments** auf Waffen und Rüstung an. Die Stärke der Bonusse skaliert mit dem **Paragon-Level** (aus `mod-paragon`) des Spielers und dem **Item-Quality**. Items behalten ihre Stats permanent — nur neu bezogene Items werden enchantet.
 
-**mod-paragon-itemgen** is an AzerothCore module that applies bonus stat enchantments to weapons and armor based on the player's Paragon level (from [mod-paragon](https://github.com/Shoro2/mod-paragon)). Items receive up to 5 enchantment slots filled with role-appropriate stats when looted, crafted, quest-rewarded, or vendor-purchased.
+Konkret werden bis zu 4 Stats + 1 optionaler Special-Slot in die `PROP_ENCHANTMENT_SLOT_0..4` (Item-Slot 7-11) geschrieben:
 
-### Core Mechanics
+| Slot | Inhalt | Quelle |
+|------|--------|--------|
+| 7 | Stamina | immer |
+| 8 | Main-Stat (Str/Agi/Int/Spi) | Spielerwahl per `.paragon stat <name>` |
+| 9 | Combat-Rating 1 | Rollen-Pool, Random |
+| 10 | Combat-Rating 2 | Rollen-Pool, kein Duplikat von Slot 9 |
+| 11 | Passive-Spell oder "Cursed"-Marker | nur bei Cursed Items |
 
-- **5-slot enchantment system** using `PROP_ENCHANTMENT_SLOT_0` through `_4` (slots 7–11):
-  - Slot 7: Stamina (always)
-  - Slot 8: Main stat (player-chosen: Str/Agi/Int/Spi)
-  - Slot 9: Random combat rating from role pool
-  - Slot 10: Random combat rating from role pool (no duplicate of slot 9)
-  - Slot 11: Passive spell (cursed items with spec set), "Cursed" marker (cursed without spec), or empty (normal items)
-
-- **3 roles**: Tank, DPS, Healer — each with a distinct combat rating pool
-- **Scaling formula**: `ceil(paragonLevel × scalingFactor × qualityMultiplier)`, capped at 666
-- **Random stat rolls**: Each stat rolls independently from 1 to the calculated max value
-- **Cursed items**: 1% chance (configurable) for all stats to be set to 150% of max, item becomes soulbound, shadow visual plays on player
-- **Permanent enchantments**: Items keep stats forever; role/stat changes only affect new items
-- **Transfer restrictions**: Trade/mail blocked to players with lower Paragon level
-
-### Role Combat Rating Pools
-
-| Role | Pool (ParagonStatIndex values) |
-|------|-------------------------------|
-| Tank (0) | Dodge(5), Parry(6), Defense(7), Block(8), Hit(9), Expertise(12) |
-| DPS Melee (1, Str/Agi main) | Crit(10), Haste(11), Hit(9), ArmorPen(13), Expertise(12), AP(15) |
-| DPS Caster (1, Int/Spi main) | Crit(10), Haste(11), Hit(9), SpellPower(14), ManaRegen(16) |
-| Healer (2) | Crit(10), Haste(11), SpellPower(14), ManaRegen(16) |
-
-DPS pool is automatically selected based on the player's chosen main stat: Strength/Agility → melee pool, Intellect/Spirit → caster pool.
-
-## File Structure
+## Rolle im Gesamtprojekt
 
 ```
-mod-paragon-itemgen/
-├── conf/
-│   ├── conf.sh.dist                  # Build: SQL path registration
-│   └── paragon_itemgen.conf.dist     # Server config template
-├── data/sql/
-│   ├── db-characters/
-│   │   └── paragon_item_enchants.sql # character_paragon_role + character_paragon_item tables
-│   └── db-world/
-│       └── paragon_itemgen_enchantments.sql  # 11323 spellitemenchantment_dbc entries (11322 stats + 1 cursed)
-├── Paragon_System_LUA/
-│   ├── ItemGen_Client.lua            # AIO client addon: tooltip display (AIO data + DBC fallback)
-│   └── ItemGen_Server.lua            # AIO server: reads enchantment slots, sends data to client
-├── src/
-│   ├── MP_loader.cpp                 # Module entry point (Addmod_paragon_itemgenScripts)
-│   ├── ParagonItemGen.h              # Header: constants, enums (ParagonStatIndex, ParagonRole)
-│   ├── ParagonItemGen.cpp            # Core: scaling logic, hooks, trade/mail restrictions
-│   └── ParagonItemGenCommands.cpp    # CommandScript: .paragon role/stat/info
-├── include.sh                        # Build integration
-└── CLAUDE.md                         # This file
+mod-paragon  ──── liefert Paragon-Level pro Account ───┐
+                                                       │
+Loot / Quest / Vendor / Craft → OnPlayerLootItem &c. ──┤
+                                                       ▼
+                                            mod-paragon-itemgen
+                                            ├─ liest Paragon-Level
+                                            ├─ liest Role + MainStat
+                                            ├─ rollt Stats (mit Cursed-Chance)
+                                            └─ schreibt 4-5 Enchantment-Slots
 ```
 
-## Enchantment System
+Trade-/Mail-Restriktion: Items werden gegen Recipient-Paragon-Level gegengeprüft (`OnPlayerCanSetTradeItem`, `OnPlayerCanSendMail`) — Items dürfen nur an Spieler mit gleichem oder höherem Paragon gehen.
 
-### ID Layout
+## Custom-Daten
+
+| Typ | Eintrag | Bemerkung |
+|-----|--------|-----------|
+| **DB-Tabellen (acore_characters)** | `character_paragon_role` | (Role 0=Tank, 1=DPS, 2=Healer) + (mainStat) |
+| | `character_paragon_item` | Tracking pro `itemGuid` (paragonLevel, role, mainStat, statAmount, cursed) |
+| | `character_paragon_spec` | Spec-Auswahl (für Cursed-Items-Passives) |
+| **DB-Tabellen (acore_world)** | `paragon_passive_spell_pool` | Pool verfügbarer Passives (mit Min-Level, Min-Item-Level) |
+| | `paragon_spec_spell_assign` | Spec → Spell-Gewichtung |
+| | `spellitemenchantment_dbc` | DBC-Override mit ~11.323 Custom-Enchantments |
+| **Custom-Enchantments** | 900001-916666 | 17 Stats × 666 Stufen, Formel `900000 + statIndex × 1000 + amount` |
+| | 920001 | "Cursed"-Marker (nur Label) |
+| | 950001-950099 | Passive-Spell-Enchantments (nur Cursed Items) |
+| **Custom-Spells** | nutzt nur die Passives aus `paragon_passive_spell_pool` |
+| **AIO-Handler-Namen** | `Paragon_ItemGen` (Server) / `Paragon_ItemGen_Client` (Client) | für Tooltip-Anzeige |
+| **Slash-Commands** | (keine) | |
+| **GM-Commands (alle SEC_PLAYER)** | `.paragon role tank/dps/healer` (resting required) | |
+| | `.paragon stat str/agi/int/spi` (resting required) | |
+| | `.paragon info` | zeigt Role, MainStat, ParagonLevel |
+
+## Skalierung (Top-Level)
 
 ```
-Base: 900000
-Formula: 900000 + statIndex × 1000 + amount (1–666)
+amount = ceil(paragonLevel × ScalingFactor × QualityMultiplier),  cap 666
 
-Stat Index 0  = Stamina (ITEM_MOD 7)    → IDs 900001–900666
-Stat Index 1  = Strength (ITEM_MOD 4)   → IDs 901001–901666
-Stat Index 2  = Agility (ITEM_MOD 3)    → IDs 902001–902666
-...
-Stat Index 16 = Mana Regen (ITEM_MOD 43) → IDs 916001–916666
-
-ID 920001 = "Cursed" marker (no stat effect, slot 11 label only, used when no passive spell)
-IDs 950001–950099 = Passive spell enchantments (ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL, cursed items only)
+Default ScalingFactor    = 0.5
+Default QualityMult      = 0.5 / 0.75 / 1.0 / 1.25 (uncommon/rare/epic/legendary)
+Default CursedChance     = 1.0 %
+Default CursedMultiplier = 1.5  (alle Stats × 1.5, gecapped 666)
 ```
 
-Each enchantment has exactly **one** `ITEM_ENCHANTMENT_TYPE_STAT` (type 5) effect. Multiple stats per item are achieved by using separate enchantment slots.
+Random-Roll pro Slot von 1 bis `amount`. Details und Konfig-Optionen: [`functions.md`](./functions.md#konfiguration).
 
-### SpellItemEnchantment DBC Fields Used
+## Rollen-Pools (Combat Ratings)
 
-For stat enchantments:
-- `Effect_1` = 5 (`ITEM_ENCHANTMENT_TYPE_STAT`)
-- `EffectPointsMin_1` = stat amount (1–666)
-- `EffectArg_1` = `ITEM_MOD_*` enum value
-- `Effect_2`, `Effect_3` = 0 (unused)
+| Rolle | Pool |
+|-------|------|
+| Tank (0) | Dodge, Parry, Defense, Block, Hit, Expertise |
+| DPS Melee (mainStat = Str/Agi) | Crit, Haste, Hit, ArmorPen, Expertise, AP |
+| DPS Caster (mainStat = Int/Spi) | Crit, Haste, Hit, SpellPower, ManaRegen |
+| Healer (2) | Crit, Haste, SpellPower, ManaRegen |
 
-## Database Schema
+DPS-Pool wird automatisch über `mainStat` gewählt.
 
-### `character_paragon_role` (characters DB)
+## Tooltip-System (zweischichtig)
 
-Stores each character's chosen role and main stat. Modified via `.paragon role` and `.paragon stat` commands.
+1. **AIO-Daten (Primärweg)**: Server liest die Slots 7-11 vom Item-Instance, decodiert `(slot, enchantmentId)` zurück zu `(statIndex, amount)`, sendet via AIO an den Client. Cache nach `(bag, slot)`. **Funktioniert ohne Client-DBC-Patch** für Inventar/Equipment.
+2. **DBC-Text-Fallback**: Scant Tooltip-Text auf "Paragon +", "Cursed", "Passive:" — greift bei Loot/Quest/Vendor-Tooltips, wo das Item-Instance nicht direkt am Tooltip hängt. Erfordert vorgepatchte Client-`SpellItemEnchantment.dbc` (`python_scripts/patch_dbc.py`).
 
-| Column | Type | Default | Notes |
-|--------|------|---------|-------|
-| `characterID` | INT UNSIGNED (PK) | — | Character GUID |
-| `role` | TINYINT UNSIGNED | 1 (DPS) | 0=Tank, 1=DPS, 2=Healer |
-| `mainStat` | TINYINT UNSIGNED | 4 (Str) | ITEM_MOD value: 3=Agi, 4=Str, 5=Int, 6=Spi |
+## Was das Modul **nicht** tut
 
-### `character_paragon_item` (characters DB)
+- **kein** Re-Enchanting bestehender Items (Stats sind permanent — nur neu erworbene Items werden enchantet)
+- **kein** Auction-House-Block (siehe [`todo.md`](./todo.md) — `CanCreateAuction`-Hook fehlt im AzerothCore-Core)
+- **kein** Stat-Re-Roll für den Spieler
 
-Tracks paragon-enchanted items for trade/mail restriction enforcement.
+## Hinweise zur Architektur
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `itemGuid` | INT UNSIGNED (PK) | Item instance GUID |
-| `paragonLevel` | INT UNSIGNED | Player's Paragon level at enchantment time |
-| `role` | TINYINT UNSIGNED | Role used (ParagonRole enum) |
-| `mainStat` | TINYINT UNSIGNED | Main stat index (ParagonStatIndex enum) |
-| `combatRating1` | TINYINT UNSIGNED | First combat rating (ParagonStatIndex enum) |
-| `combatRating2` | TINYINT UNSIGNED | Second combat rating (ParagonStatIndex enum) |
-| `statAmount` | INT UNSIGNED | Per-stat amount applied |
-| `cursed` | TINYINT UNSIGNED | 1 if item rolled cursed |
+- Items mit Random-Properties ("of the Bear" etc.) werden bewusst überschrieben — Paragon-Stats sind wertvoller, der Spieler bekommt eine Chat-Nachricht.
+- BasePoints-Off-by-One: `Spell.dbc` speichert `EffectBasePoints = real_value - 1`. Beim Schreiben in `spell_dbc` darauf achten — siehe [`share-public/docs/03-spell-system.md`](https://github.com/Shoro2/share-public/blob/main/docs/03-spell-system.md#off-by-one-basepoints).
 
-### External Dependency: `character_paragon` (from mod-paragon)
+## Lizenz
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `accountID` | INT UNSIGNED (PK) | Account ID |
-| `level` | INT | Current Paragon level |
-| `xp` | INT | XP remaining (counts down) |
-
-## Key Functions
-
-### ParagonItemGen.cpp
-
-| Function | Purpose |
-|----------|---------|
-| `ApplyParagonEnchantment(Player*, Item*)` | Main entry: validates item, calculates stats, rolls random amounts (or cursed), applies 4 enchantment slots |
-| `RollStatAmount(maxAmount)` | Rolls a random stat value from 1 to maxAmount |
-| `RollCursed()` | Returns true with `conf_CursedChance`% probability |
-| `GetPlayerParagonLevel(Player*)` | Queries `character_paragon` for account's Paragon level |
-| `GetPlayerRoleInfo(Player*)` | Queries `character_paragon_role` for role + main stat |
-| `PickTwoRandomRatings(role, &cr1, &cr2)` | Selects 2 distinct random ratings from role pool |
-| `CalculateStatAmount(paragonLevel, quality)` | `ceil(level × scalingFactor × qualityMult[quality])` |
-| `GetEnchantmentId(statIndex, amount)` | `900000 + statIndex × 1000 + amount` |
-| `IsEligibleItem(Item*)` | Checks: weapon/armor, quality ≥ uncommon, itemLevel ≥ config min |
-| `ItemHasParagonEnchantment(Item*)` | Checks slots 7–11 for existing paragon enchantments |
-| `ApplySlotEnchantment(Player*, Item*, slot, enchId)` | Applies/re-applies a single enchantment slot |
-
-### Hook Points (PlayerScript)
-
-| Hook | Trigger |
-|------|---------|
-| `OnPlayerLootItem` | Mob/chest loot |
-| `OnPlayerCreateItem` | Crafting |
-| `OnPlayerQuestRewardItem` | Quest rewards |
-| `OnPlayerAfterStoreOrEquipNewItem` | Vendor purchases |
-| `OnPlayerCanSetTradeItem` | Trade restriction (blocks if target Paragon < item Paragon) |
-| `OnPlayerCanSendMail` | Mail restriction (blocks if recipient Paragon < item Paragon) |
-
-### Chat Commands (CommandScript)
-
-Registered under `.paragon` prefix, all `SEC_PLAYER`:
-- `.paragon role tank|dps|healer` — requires `PLAYER_FLAGS_RESTING`
-- `.paragon stat str|agi|int|spi` — requires `PLAYER_FLAGS_RESTING`
-- `.paragon info` — no restriction
-
-## Configuration
-
-All options read via `sConfigMgr->GetOption<>()` in `OnAfterConfigLoad`:
-
-| Key | Type | Default |
-|-----|------|---------|
-| `ParagonItemGen.Enable` | bool | true |
-| `ParagonItemGen.OnLoot` | bool | true |
-| `ParagonItemGen.OnCreate` | bool | true |
-| `ParagonItemGen.OnQuest` | bool | true |
-| `ParagonItemGen.OnVendor` | bool | true |
-| `ParagonItemGen.ScalingFactor` | float | 0.5 |
-| `ParagonItemGen.MinParagonLevel` | uint32 | 1 |
-| `ParagonItemGen.MinItemLevel` | uint32 | 150 |
-| `ParagonItemGen.BlockTrade` | bool | true |
-| `ParagonItemGen.BlockMail` | bool | true |
-| `ParagonItemGen.QualityMult.Uncommon` | float | 0.5 |
-| `ParagonItemGen.QualityMult.Rare` | float | 0.75 |
-| `ParagonItemGen.QualityMult.Epic` | float | 1.0 |
-| `ParagonItemGen.QualityMult.Legendary` | float | 1.25 |
-| `ParagonItemGen.CursedChance` | float | 1.0 |
-| `ParagonItemGen.CursedMultiplier` | float | 1.5 |
-| `ParagonItemGen.CursedVisualKit` | uint32 | 5765 |
-
-## Build & Integration
-
-- Standard AzerothCore module: symlink or clone into `modules/` directory
-- No custom `CMakeLists.txt` needed (uses auto-detection)
-- Entry point: `Addmod_paragon_itemgenScripts()` in `MP_loader.cpp`
-- SQL files auto-discovered via `include.sh` → `conf/conf.sh.dist`
-
-## Code Style
-
-Follow AzerothCore C++ conventions:
-- 4-space indentation, no tabs
-- UTF-8 encoding, LF line endings
-- `Type const*` (not `const Type*`)
-- Use `uint32`, `uint8`, `int32` etc. from `Define.h` (not `uint32_t`)
-- `std::uniform_int_distribution<int>` (not `<uint8>` — MSVC rejects it)
-- Backtick table/column names in SQL
-
-## Cursed Items
-
-Items have a configurable chance (default 1%) to roll "cursed" when enchanted:
-
-- **All 4 stats** set to `conf_CursedMultiplier` × max value (default 150%), capped at 666
-- **Soulbound** immediately via `item->SetBinding(true)`
-- **Shadow visual** played on the player via `player->SendPlaySpellVisual(conf_CursedVisualKit)`
-- **Passive spell** (slot 11): If the player has a spec set, a passive spell from the spec's pool is rolled and applied as an equip-spell enchantment (IDs 950001–950099). This is the cursed item's bonus reward.
-- **Cursed marker** (slot 11): If no passive spell was rolled (no spec set, passive disabled, etc.), the "Cursed" label enchantment (ID 920001) is applied instead.
-- **Normal items** do NOT receive passive spells — passives are exclusive to cursed items.
-- **AIO Lua addon** displays stats and cursed status in tooltips via two methods:
-  1. **AIO data** (primary): Server reads enchantment IDs directly from item PROP_ENCHANTMENT slots, decodes stat type + amount from the ID formula, and sends to client via AIO on login and inventory changes. Works **without client DBC patching**.
-  2. **DBC text fallback**: Scans tooltip for "Paragon +", "Cursed", "Passive:" text from `SpellItemEnchantment.dbc` `Name_Lang_enUS` field. Covers non-inventory tooltips (loot, quest, vendor). Requires patched client DBC.
-
-### Client-side Setup
-
-1. Copy `Paragon_System_LUA/ItemGen_Client.lua` and `ItemGen_Server.lua` to the server's `lua_scripts/` folder (requires AIO)
-2. **Optional**: Run `python_scripts/patch_dbc.py` (im [share-public](https://github.com/Shoro2/share-public/tree/main/python_scripts) Repo) für erweiterte Tooltip-Anzeige bei Loot/Quest/Vendor-Items (ohne Patch funktioniert nur die AIO-basierte Anzeige für Inventar/Equipment)
-
-## Known Issues and TODOs
-
-### Not Yet Implemented
-
-1. **Auction House Restriction**: AzerothCore has no `CanListAuction` or `CanCreateAuction` hook. The `OnAuctionAdd` hook fires *after* listing and returns void (cannot cancel). Options:
-   - Core patch: add a `CanCreateAuction` hook returning bool
-   - `OnAuctionAdd` + immediate auction cancellation/item return (hacky)
-   - Cursed items are already soulbound, preventing AH listing
-
-### Potential Improvements
-
-3. **In-memory caching**: Paragon level and role info are queried from DB on every item acquisition. For high-traffic servers, cache in player data map.
-
-4. ~~**PROP_ENCHANTMENT_SLOT conflict**~~: FIXED — Items with random properties ("of the Bear") are intentionally overridden by paragon enchantments, with a chat notification to the player.
-
-5. ~~**No prepared statements**~~: FIXED — All DB queries migrated to `CharacterDatabasePreparedStatement` / `WorldDatabasePreparedStatement`.
-
-6. ~~**Combat rating pool overlap**~~: FIXED — DPS pool split into melee (Str/Agi main: Crit, Haste, Hit, ArmorPen, Expertise, AP) and caster (Int/Spi main: Crit, Haste, Hit, SP, ManaRegen). Pool selected automatically based on player's main stat.
-
-7. ~~**Tooltip display requires client DBC patching**~~: FIXED — AIO-based tooltip system reads enchantment data from item PROP_ENCHANTMENT slots on the server, decodes stat type + amount from the enchantment ID formula (`900000 + statIndex * 1000 + amount`), and sends to the client via AIO. Client displays stats, cursed markers, and passive spells without requiring SpellItemEnchantment.dbc to be patched. DBC text scanning kept as fallback for non-inventory tooltips (loot, quest, vendor).
+GPL v2.
