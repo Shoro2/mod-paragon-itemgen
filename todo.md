@@ -2,10 +2,6 @@
 
 > Offene Aufgaben für dieses Modul. Erledigte TODOs in `log.md` festhalten und hier entfernen.
 
-## Architektur
-
-- [ ] **(blockiert/niedrig)** Auction-House-Restriktion: AzerothCore hat keinen `CanCreateAuction`-Hook, `OnAuctionAdd` ist void. Cursed Items sind ohnehin Soulbound; normale Paragon-Items theoretisch handelbar. Optionen: (a) Core-Patch in azerothcore-wotlk für `CanCreateAuction`, (b) alle Paragon-Items Soulbound machen, (c) akzeptieren — derzeit Status quo.
-
 ## Performance
 
 - [ ] **(niedrig)** In-Memory-Cache für ParagonLevel + Role: aktuell DB-Query bei jeder Item-Acquisition. Bei busy Servern > 100 Items/Min Player-induced könnte ein per-Player-Cache (analog mod-paragon) Last reduzieren.
