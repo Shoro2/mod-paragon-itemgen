@@ -1,20 +1,20 @@
 # TODOs — mod-paragon-itemgen
 
-> Offene Aufgaben für dieses Modul. Erledigte TODOs in `log.md` festhalten und hier entfernen.
+> Open tasks for this module. Record completed TODOs in `log.md` and remove them here.
 
 ## Performance
 
-- [ ] **(niedrig)** In-Memory-Cache für ParagonLevel + Role: aktuell DB-Query bei jeder Item-Acquisition. Bei busy Servern > 100 Items/Min Player-induced könnte ein per-Player-Cache (analog mod-paragon) Last reduzieren.
+- [ ] **(low)** In-memory cache for ParagonLevel + Role: currently a DB query happens on every item acquisition. On busy servers > 100 items/min driven by players, a per-player cache (similar to mod-paragon) could reduce load.
 
-## Korrektheit
+## Correctness
 
-- [ ] **(mittel)** Off-by-One in `BasePoints`: `Spell.dbc` speichert `EffectBasePoints = real_value - 1`. Beim Einfügen in `spell_dbc` darauf achten — bestehende Stat-Auras systematisch prüfen, ob "+50" wirklich 50 oder 51 in-game wirkt.
-- [ ] **(niedrig)** `paragon_itemgen_enchantments.sql` ist mit ~11.323 Einträgen >100 KB. Migration auf einen Generator-Script-Pfad (`python_scripts/`) wäre wartbarer als statisches SQL.
+- [ ] **(medium)** Off-by-one in `BasePoints`: `Spell.dbc` stores `EffectBasePoints = real_value - 1`. Be aware when inserting into `spell_dbc` — systematically check existing stat auras to confirm "+50" actually applies as 50, not 51, in-game.
+- [ ] **(low)** `paragon_itemgen_enchantments.sql` is >100 KB with ~11,323 entries. Migrating to a generator script path (`python_scripts/`) would be more maintainable than static SQL.
 
-## Doku
+## Docs
 
-- [ ] **(hoch)** `CLAUDE.md` "Known Issues"-Liste enthält viele bereits erledigte Punkte (`~~strikethrough~~`). Phase B räumt das auf.
+- [ ] **(high)** The `CLAUDE.md` "Known Issues" list contains many already-resolved items (`~~strikethrough~~`). Phase B will clean this up.
 
-## Konvention
+## Convention
 
-Erledigte Items NICHT durchstreichen — entfernen und in `log.md` dokumentieren.
+Do NOT cross out completed items — remove them and document them in `log.md`.
