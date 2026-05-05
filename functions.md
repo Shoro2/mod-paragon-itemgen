@@ -1,59 +1,59 @@
-# Funktionen & Mechaniken — mod-paragon-itemgen
+# Functions & mechanics — mod-paragon-itemgen
 
-> Detaillierte Funktions- und Mechanik-Referenz. Inhalts-/Zweck-Doku siehe `CLAUDE.md`.
+> Detailed function and mechanics reference. For content/purpose docs see `CLAUDE.md`.
 
-## Modul-Loader
+## Module loader
 
 ### `Addmod_paragon_itemgenScripts()` (`src/MP_loader.cpp`)
-Ruft drei Sub-Loader: `AddParagonItemGenScripts()`, `AddParagonItemGenCommands()`, `AddParagonItemGenNPC()`.
+Calls three sub-loaders: `AddParagonItemGenScripts()`, `AddParagonItemGenCommands()`, `AddParagonItemGenNPC()`.
 
-## 5-Slot-Enchantment-System
+## 5-slot enchantment system
 
-WoW 3.3.5 Items haben 5 freie `PROP_ENCHANTMENT_SLOT_*` (Slots 7-11 in der Enchantment-Liste). Diese werden vom Modul belegt:
+WoW 3.3.5 items have 5 free `PROP_ENCHANTMENT_SLOT_*` slots (slots 7-11 in the enchantment list). The module fills these:
 
-| Slot | Inhalt | Wann gefüllt |
+| Slot | Contents | When filled |
 |------|--------|--------------|
-| 7 | Stamina | immer |
-| 8 | Main-Stat (Str/Agi/Int/Spi) | immer (`mainStat` aus `character_paragon_role`) |
-| 9 | Combat-Rating 1 | immer (Random aus Rollen-Pool) |
-| 10 | Combat-Rating 2 | immer (Random, kein Duplikat von 9) |
-| 11 | Passive-Spell-Enchant **oder** "Cursed"-Marker (920001) | nur Cursed Items |
+| 7 | Stamina | always |
+| 8 | Main stat (Str/Agi/Int/Spi) | always (`mainStat` from `character_paragon_role`) |
+| 9 | Combat rating 1 | always (random from role pool) |
+| 10 | Combat rating 2 | always (random, no duplicate of slot 9) |
+| 11 | Passive spell enchant **or** "Cursed" marker (920001) | cursed items only |
 
-## Enchantment-ID-Formel
+## Enchantment ID formula
 
 ```
 ID = 900000 + statIndex × 1000 + amount
 ```
 
-mit `statIndex` 0..16 (siehe Enum `ParagonStatIndex` in `ParagonItemGen.h`) und `amount` 1..666.
+with `statIndex` 0..16 (see enum `ParagonStatIndex` in `ParagonItemGen.h`) and `amount` 1..666.
 
-**Reverse** (für Tooltip-Decoding):
+**Reverse** (for tooltip decoding):
 ```lua
 statIndex = math.floor((id - 900000) / 1000)
 amount    = (id - 900000) % 1000
 ```
 
-Special-IDs:
-- `920001` — "Cursed"-Marker (kein Stat-Effekt, nur Label)
-- `950001-950099` — Passive-Spell-Enchants (`ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL`, nur Cursed Items)
+Special IDs:
+- `920001` — "Cursed" marker (no stat effect, label only)
+- `950001-950099` — passive-spell enchants (`ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL`, cursed items only)
 
-## Skalierung
+## Scaling
 
 ```
 amount = ceil(paragonLevel × ScalingFactor × QualityMultiplier[quality])
 amount = min(amount, 666)
 ```
 
-`ScalingFactor` Default = `8/15 ≈ 0.5333` (so dass Cursed Legendary @ 666 = exakt 666 Stat).
+`ScalingFactor` default = `8/15 ≈ 0.5333` (so cursed legendary @ 666 = exactly 666 stat).
 
-| Quality | Multiplier (Default) |
+| Quality | Multiplier (default) |
 |---------|---------------------|
 | Uncommon | 0.5 |
 | Rare | 0.75 |
 | Epic | 1.0 |
 | Legendary | 1.25 |
 
-Beispielwerte @ paragonLevel=666:
+Example values @ paragonLevel=666:
 | | Normal | Cursed (×1.5) |
 |---|--------|---------------|
 | Uncommon | 178 | 267 |
@@ -61,47 +61,47 @@ Beispielwerte @ paragonLevel=666:
 | Epic | 356 | 534 |
 | Legendary | 444 | **666** |
 
-Random-Roll pro Slot: `RollStatAmount(maxAmount)` = `random(1, maxAmount)`. Jeder Slot rollt unabhängig.
+Random roll per slot: `RollStatAmount(maxAmount)` = `random(1, maxAmount)`. Each slot rolls independently.
 
-## Rollen-Pools
+## Role pools
 
-Definiert in `ParagonItemGen.cpp` als statische Arrays:
+Defined in `ParagonItemGen.cpp` as static arrays:
 
-| Rolle | Pool (`ParagonStatIndex`-Werte) |
+| Role | Pool (`ParagonStatIndex` values) |
 |-------|--------------------------------|
 | Tank (0) | Dodge(5), Parry(6), Defense(7), Block(8), Hit(9), Expertise(12) |
 | DPS Melee (1, mainStat=Str/Agi) | Crit(10), Haste(11), Hit(9), ArmorPen(13), Expertise(12), AP(15) |
 | DPS Caster (1, mainStat=Int/Spi) | Crit(10), Haste(11), Hit(9), SpellPower(14), ManaRegen(16) |
 | Healer (2) | Crit(10), Haste(11), SpellPower(14), ManaRegen(16) |
 
-DPS-Pool wählt sich automatisch via `mainStat` in `PickTwoRandomRatings(role, mainStat, &cr1, &cr2)`.
+The DPS pool is selected automatically via `mainStat` in `PickTwoRandomRatings(role, mainStat, &cr1, &cr2)`.
 
-## Cursed Items
+## Cursed items
 
-`RollCursed()` returnt true mit Chance `conf_CursedChance` (Default 1.0%).
+`RollCursed()` returns true with chance `conf_CursedChance` (default 1.0%).
 
-Bei Cursed:
-- alle 4 Stat-Slots: `amount = min(amount × conf_CursedMultiplier, 666)`
-- `item->SetBinding(true)` (Soulbound)
-- `player->SendPlaySpellVisual(conf_CursedVisualKit)` (Default 5765 = Shadow-Effekt)
+When cursed:
+- all 4 stat slots: `amount = min(amount × conf_CursedMultiplier, 666)`
+- `item->SetBinding(true)` (soulbound)
+- `player->SendPlaySpellVisual(conf_CursedVisualKit)` (default 5765 = shadow effect)
 - Slot 11:
-  - wenn Player `character_paragon_spec` gesetzt → Random-Spell aus `paragon_passive_spell_pool` (gefiltert nach specId via `paragon_spec_spell_assign`, gewichtet, plus `minParagonLevel`/`minItemLevel`-Filter)
-  - sonst → Marker-Enchant 920001
+  - if the player has `character_paragon_spec` set → random spell from `paragon_passive_spell_pool` (filtered by specId via `paragon_spec_spell_assign`, weighted, plus `minParagonLevel`/`minItemLevel` filter)
+  - otherwise → marker enchant 920001
 
-`character_paragon_item` wird mit allen Roll-Daten persistiert (für Trade/Mail-Restriction).
+`character_paragon_item` is persisted with all roll data (for trade/mail restriction).
 
-## Hook-Punkte (PlayerScript)
+## Hook points (PlayerScript)
 
-| Hook | Trigger | Wirkung |
+| Hook | Trigger | Effect |
 |------|---------|---------|
-| `OnPlayerLootItem` | Loot von Mob/Chest | `ApplyParagonEnchantment` wenn `OnLoot=true` |
-| `OnPlayerCreateItem` | Crafting | dito wenn `OnCreate=true` |
-| `OnPlayerQuestRewardItem` | Quest-Reward | dito wenn `OnQuest=true` |
-| `OnPlayerAfterStoreOrEquipNewItem` | Vendor-Kauf | dito wenn `OnVendor=true` |
-| `OnPlayerCanSetTradeItem` | Trade | block wenn `BlockTrade=true` und `targetParagonLevel < itemParagonLevel` |
-| `OnPlayerCanSendMail` | Mail | block wenn `BlockMail=true` und `recipientParagonLevel < itemParagonLevel` |
+| `OnPlayerLootItem` | Loot from mob/chest | `ApplyParagonEnchantment` if `OnLoot=true` |
+| `OnPlayerCreateItem` | Crafting | ditto if `OnCreate=true` |
+| `OnPlayerQuestRewardItem` | Quest reward | ditto if `OnQuest=true` |
+| `OnPlayerAfterStoreOrEquipNewItem` | Vendor purchase | ditto if `OnVendor=true` |
+| `OnPlayerCanSetTradeItem` | Trade | block if `BlockTrade=true` and `targetParagonLevel < itemParagonLevel` |
+| `OnPlayerCanSendMail` | Mail | block if `BlockMail=true` and `recipientParagonLevel < itemParagonLevel` |
 
-## Eligibility-Check (`IsEligibleItem`)
+## Eligibility check (`IsEligibleItem`)
 
 ```cpp
 bool IsEligibleItem(Item* item) {
@@ -110,14 +110,14 @@ bool IsEligibleItem(Item* item) {
     if (tpl->Quality < ITEM_QUALITY_UNCOMMON) return false;
     if (tpl->ItemLevel < conf_MinItemLevel) return false;
     if (paragonLevel < conf_MinParagonLevel) return false;
-    if (ItemHasParagonEnchantment(item)) return false; // schon enchantet
+    if (ItemHasParagonEnchantment(item)) return false; // already enchanted
     return true;
 }
 ```
 
-## Slot-Read in Lua (kritisch)
+## Slot read in Lua (critical)
 
-Eluna's `Item:GetEnchantmentId(slot)` deckt nur Slots 0-6 ab (`MAX_INSPECTED_ENCHANTMENT_SLOT`). Für Slots 7-11 muss raw-UpdateField-Zugriff gemacht werden:
+Eluna's `Item:GetEnchantmentId(slot)` only covers slots 0-6 (`MAX_INSPECTED_ENCHANTMENT_SLOT`). Slots 7-11 require raw UpdateField access:
 
 ```lua
 -- ItemGen_Server.lua
@@ -128,53 +128,53 @@ local function ReadProp(item, slot)
 end
 ```
 
-Slot-Mapping: PROP_0=7, PROP_1=8, ..., PROP_4=11.
+Slot mapping: PROP_0=7, PROP_1=8, ..., PROP_4=11.
 
-## AIO-Tooltip-System (seit März 2026)
+## AIO tooltip system (since March 2026)
 
 ### Server (`ItemGen_Server.lua`)
-1. Bei `OnLogin` und `OnInventoryChange`: scannt für jedes Inventar-Item die Slots 7-11 raw.
-2. Decodiert `(statIndex, amount)` aus den Enchantment-IDs via Formel.
-3. Sendet pro Item-Position `(bag, slot, slot_data[])` an Client via AIO.
+1. On `OnLogin` and `OnInventoryChange`: scans slots 7-11 raw for every inventory item.
+2. Decodes `(statIndex, amount)` from the enchantment IDs via the formula.
+3. Sends `(bag, slot, slot_data[])` per item position to the client via AIO.
 
 ### Client (`ItemGen_Client.lua`)
 1. Cache: `paragonItems[bag][slot] = {sta, mainStat, cr1, cr2, cursed, passiveSpellId}`
-2. Hookt `GameTooltip:SetBagItem`, `SetInventoryItem`, `SetMerchantItem`, `SetLootItem`, ... 
-3. Pro Tooltip: passendes Cache-Entry suchen, Custom-Lines an Tooltip anhängen ("Paragon +X Stamina", "Paragon +Y Strength", ..., gold/lila Färbung).
-4. Fallback: wenn Cache leer (Vendor/Loot ohne bag/slot) → DBC-Text-Scan auf "Paragon +", "Cursed", "Passive:" (greift nur bei gepatchter Client-DBC).
+2. Hooks `GameTooltip:SetBagItem`, `SetInventoryItem`, `SetMerchantItem`, `SetLootItem`, ...
+3. Per tooltip: looks up the matching cache entry, appends custom lines to the tooltip ("Paragon +X Stamina", "Paragon +Y Strength", ..., gold/purple coloring).
+4. Fallback: if the cache is empty (vendor/loot without bag/slot) → DBC text scan for "Paragon +", "Cursed", "Passive:" (only kicks in with a patched client DBC).
 
-→ Damit funktioniert das Tooltip-System **ohne** Client-DBC-Patch für Inventar/Equipment, mit Patch zusätzlich für Loot/Quest/Vendor.
+→ This way the tooltip system works **without** a client DBC patch for inventory/equipment, and additionally with a patch for loot/quest/vendor.
 
-## Chat-Commands (`.paragon`)
+## Chat commands (`.paragon`)
 
 ```
-.paragon role tank|dps|healer    # erfordert PLAYER_FLAGS_RESTING
-.paragon stat str|agi|int|spi    # erfordert PLAYER_FLAGS_RESTING
-.paragon info                    # zeigt aktuelle Rolle, MainStat, Paragon-Level
+.paragon role tank|dps|healer    # requires PLAYER_FLAGS_RESTING
+.paragon stat str|agi|int|spi    # requires PLAYER_FLAGS_RESTING
+.paragon info                    # shows current role, mainStat, Paragon level
 ```
 
-## NPC (Spec-Auswahl)
+## NPC (spec selection)
 
-Implementiert in `ParagonItemGenNPC.cpp`. Gossip listet alle Talent-Specs (Talent-Tab IDs aus `talenttab_dbc`); Auswahl persistiert in `character_paragon_spec`. Beeinflusst nur den Cursed-Passive-Pool.
+Implemented in `ParagonItemGenNPC.cpp`. The gossip lists all talent specs (talent tab IDs from `talenttab_dbc`); selection persists in `character_paragon_spec`. Affects only the cursed passive pool.
 
-## Konfigurations-Optionen (Auszug)
+## Configuration options (excerpt)
 
-| Schlüssel | Default | Wirkung |
+| Key | Default | Effect |
 |-----------|---------|---------|
-| `ParagonItemGen.Enable` | true | Master-Toggle |
-| `ParagonItemGen.OnLoot/OnCreate/OnQuest/OnVendor` | true | pro Hook |
-| `ParagonItemGen.ScalingFactor` | 0.5333 (8/15) | Stat/Level-Multiplikator |
-| `ParagonItemGen.MinParagonLevel` | 1 | Mindest-Level für Apply |
-| `ParagonItemGen.MinItemLevel` | 150 | Mindest-iLvl für Apply |
-| `ParagonItemGen.QualityMult.Uncommon/Rare/Epic/Legendary` | 0.5/0.75/1.0/1.25 | Quality-Multiplikator |
+| `ParagonItemGen.Enable` | true | master toggle |
+| `ParagonItemGen.OnLoot/OnCreate/OnQuest/OnVendor` | true | per hook |
+| `ParagonItemGen.ScalingFactor` | 0.5333 (8/15) | stat/level multiplier |
+| `ParagonItemGen.MinParagonLevel` | 1 | minimum level for apply |
+| `ParagonItemGen.MinItemLevel` | 150 | minimum iLvl for apply |
+| `ParagonItemGen.QualityMult.Uncommon/Rare/Epic/Legendary` | 0.5/0.75/1.0/1.25 | quality multiplier |
 | `ParagonItemGen.CursedChance` | 1.0 | % |
-| `ParagonItemGen.CursedMultiplier` | 1.5 | × Cursed-Stats |
-| `ParagonItemGen.CursedVisualKit` | 5765 | SpellVisualKit-ID |
-| `ParagonItemGen.BlockTrade/BlockMail` | true | Restriction-Toggle |
+| `ParagonItemGen.CursedMultiplier` | 1.5 | × cursed stats |
+| `ParagonItemGen.CursedVisualKit` | 5765 | SpellVisualKit ID |
+| `ParagonItemGen.BlockTrade/BlockMail` | true | restriction toggle |
 
-## Bekannte Einschränkungen
+## Known limitations
 
-- **Auction House**: AzerothCore hat keinen `CanCreateAuction`-Hook. `OnAuctionAdd` ist void → Cursed Items sind ohnehin Soulbound, normale Paragon-Items theoretisch handelbar.
-- **Random Properties Override**: Items mit Vanilla-Random-Properties ("of the Bear") werden überschrieben — Spieler bekommt Chat-Hinweis.
-- **Off-by-One in `BasePoints`**: `Spell.dbc` speichert `EffectBasePoints = real_value - 1`. Beim Einfügen in `spell_dbc` darauf achten.
-- **In-Memory-Cache** für ParagonLevel/Role wäre sinnvoll — aktuell DB-Query pro Item-Acquisition.
+- **Auction house**: AzerothCore has no `CanCreateAuction` hook. `OnAuctionAdd` is void → cursed items are soulbound anyway, regular Paragon items theoretically tradable.
+- **Random properties override**: items with vanilla random properties ("of the Bear") are overwritten — the player gets a chat hint.
+- **Off-by-one in `BasePoints`**: `Spell.dbc` stores `EffectBasePoints = real_value - 1`. Be aware when inserting into `spell_dbc`.
+- **In-memory cache** for ParagonLevel/Role would be useful — currently a DB query per item acquisition.
