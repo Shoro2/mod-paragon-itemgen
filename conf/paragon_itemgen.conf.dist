@@ -81,6 +81,8 @@ ParagonItemGen.CursedVisualKit = 5765
 # (CursedChance 50.0 + a rank worth 10 = 60%), and the sum is capped at 100.
 # The module matches the tag in EffectMiscValue, never a spell id, so the
 # talents keep working when their spell records are re-generated.
+# CursedChance = 0 still disables cursed items entirely: the bonus can only
+# raise a chance that is already allowed, it never re-enables a disabled roll.
 ParagonItemGen.CursedTalentBonus = 1
 
 ###############################################################################

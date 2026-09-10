@@ -594,6 +594,11 @@ static float CursedChanceFor(Player const* player, CursedContext context)
 
 static bool RollCursed(Player const* player, CursedContext context)
 {
+    // The RAW base gates first: the conf promises CursedChance = 0 is an unconditional kill switch.
+    // The talent bonus may only raise a rate the operator allowed, never resurrect one they turned off.
+    if (conf_CursedChance <= 0.0f)
+        return false;
+
     float chance = CursedChanceFor(player, context);
     if (chance <= 0.0f)
         return false;
