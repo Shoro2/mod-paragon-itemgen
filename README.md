@@ -21,7 +21,7 @@ Stats are written into the free `PROP_ENCHANTMENT_SLOT_0..4` and stay on the ite
 - **Scaling formula**: `amount = ceil(paragonLevel × ScalingFactor × QualityMultiplier)`, capped at 666. Per default a Paragon-666 player on a legendary item lands on exactly +666 per stat (cursed).
 - **Quality multipliers** (defaults): Uncommon `0.5`, Rare `0.75`, Epic `1.0`, Legendary `1.25`
 - **Role pools**: each role rolls combat ratings from its own pool; the DPS pool selects automatically by `mainStat`
-- **Cursed items** (default 1% chance): all stats × 1.5, soulbound, shadow visual, exclusive passive-spell pool
+- **Cursed items** (default 1 % chance in code, 50 % in the shipped conf): all stats × 1.5, soulbound, shadow visual, exclusive passive-spell pool. Since Round E / WP6 the Forgotten Talents nodes *Tainted Craft* / *Dark Bargain* add +2…10 percent points for crafted items / quest rewards (`ParagonItemGen.CursedTalentBonus`), read from the aura tag `EffectMiscValue` 76002 / 76003 — never from a spell id
 - **Trade & mail restriction**: items can only be transferred to recipients with equal-or-higher Paragon level
 - **AIO-based tooltip system**: the server pushes per-item slot data (`bag, slot`) to the client; tooltips show the bonuses without requiring a client-side DBC patch for inventory/equipment
 - **Spec-aware passives** for cursed items via in-game NPC gossip
@@ -59,7 +59,7 @@ Stats are written into the free `PROP_ENCHANTMENT_SLOT_0..4` and stay on the ite
 - `ParagonItemGen.ScalingFactor` (default `0.5333` = `8/15`)
 - `ParagonItemGen.MinParagonLevel`, `MinItemLevel`
 - Quality multipliers: `QualityMult.Uncommon/Rare/Epic/Legendary`
-- `ParagonItemGen.CursedChance`, `CursedMultiplier`, `CursedVisualKit`
+- `ParagonItemGen.CursedChance`, `CursedMultiplier`, `CursedVisualKit`, `CursedTalentBonus` (Forgotten Talents +% on crafting / quest rewards)
 - `ParagonItemGen.BlockTrade`, `BlockMail`
 
 ## Requirements

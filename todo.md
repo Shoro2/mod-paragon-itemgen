@@ -10,6 +10,7 @@
 
 - [ ] **(medium)** Off-by-one in `BasePoints`: `Spell.dbc` stores `EffectBasePoints = real_value - 1`. Be aware when inserting into `spell_dbc` — systematically check existing stat auras to confirm "+50" actually applies as 50, not 51, in-game.
 - [ ] **(low)** `paragon_itemgen_enchantments.sql` is >100 KB with ~11,323 entries. Migrating to a generator script path (`python_scripts/`) would be more maintainable than static SQL.
+- [ ] **(low)** `ParagonItemGen.CursedChance`: the `GetOption` default (`1.0f`) disagrees with the static initialiser (`50.0f`) and the shipped `.conf.dist` (`50.0`); an unset key gives 1 %. Pick one and align README/functions (seen in Round E / WP6, left alone).
 
 ## Docs
 

@@ -78,7 +78,7 @@ The DPS pool is selected automatically via `mainStat` in `PickTwoRandomRatings(r
 
 ## Cursed items
 
-`RollCursed()` returns true with chance `conf_CursedChance` (default 1.0%).
+`RollCursed(player, context)` returns true with chance `CursedChanceFor(player, context)` = `conf_CursedChance` (default 1.0 % in code, 50 % in the shipped conf) plus, while `ParagonItemGen.CursedTalentBonus` is on, the Forgotten Talents bonus for the context: `CursedContext::Create` reads the aura tag **76002** (*Tainted Craft*, 2/4/6/8/10), `CursedContext::QuestReward` the tag **76003** (*Dark Bargain*, the same); `Loot` and `Vendor` add nothing. The bonus is `TaggedAuraAmount(player, tag)` — the largest `GetAmount()` among the player's `SPELL_AURA_DUMMY` effects whose `GetMiscValue()` equals the tag, 0 when absent — so this module never names an FT spell id and the FT content may renumber freely (Round E / WP6). The sum is clamped to 0..100.
 
 When cursed:
 - all 4 stat slots: `amount = min(amount × conf_CursedMultiplier, 666)`
@@ -95,8 +95,8 @@ When cursed:
 | Hook | Trigger | Effect |
 |------|---------|---------|
 | `OnPlayerLootItem` | Loot from mob/chest | `ApplyParagonEnchantment` if `OnLoot=true` |
-| `OnPlayerCreateItem` | Crafting | ditto if `OnCreate=true` |
-| `OnPlayerQuestRewardItem` | Quest reward | ditto if `OnQuest=true` |
+| `OnPlayerCreateItem` | Crafting | ditto if `OnCreate=true` (`CursedContext::Create` → tag 76002) |
+| `OnPlayerQuestRewardItem` | Quest reward | ditto if `OnQuest=true` (`CursedContext::QuestReward` → tag 76003) |
 | `OnPlayerAfterStoreOrEquipNewItem` | Vendor purchase | ditto if `OnVendor=true` |
 | `OnPlayerCanSetTradeItem` | Trade | block if `BlockTrade=true` and `targetParagonLevel < itemParagonLevel` |
 | `OnPlayerCanSendMail` | Mail | block if `BlockMail=true` and `recipientParagonLevel < itemParagonLevel` |
@@ -168,6 +168,7 @@ Implemented in `ParagonItemGenNPC.cpp`. The gossip lists all talent specs (talen
 | `ParagonItemGen.MinItemLevel` | 150 | minimum iLvl for apply |
 | `ParagonItemGen.QualityMult.Uncommon/Rare/Epic/Legendary` | 0.5/0.75/1.0/1.25 | quality multiplier |
 | `ParagonItemGen.CursedChance` | 1.0 | % |
+| `ParagonItemGen.CursedTalentBonus` | 1 | Forgotten Talents percent points on crafting / quest rewards (tags 76002 / 76003) |
 | `ParagonItemGen.CursedMultiplier` | 1.5 | × cursed stats |
 | `ParagonItemGen.CursedVisualKit` | 5765 | SpellVisualKit ID |
 | `ParagonItemGen.BlockTrade/BlockMail` | true | restriction toggle |
