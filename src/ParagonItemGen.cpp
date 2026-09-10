@@ -28,6 +28,7 @@
 #include "WorldDatabase.h"
 #include "DBCStores.h"
 #include "ObjectGuid.h"
+#include "SpellAuraEffects.h"
 #include <random>
 #include <vector>
 #include <mutex>
@@ -49,8 +50,34 @@ static bool   conf_BlockMail       = true;
 static float  conf_CursedChance    = 50.0f;
 static float  conf_CursedMultiplier = 1.5f;
 static uint32 conf_CursedVisualKit = 5765;
+static bool   conf_CursedTalentBonus = true;
 static bool   conf_PassiveSpellEnable  = true;
 static float  conf_PassiveSpellChance  = 100.0f;
+
+// ============================================================
+// Cursed chance: the Forgotten Talents bonus
+// ============================================================
+// Two Forgotten Talents nodes raise the cursed chance, but only for the item
+// source they own: "Tainted Craft" on crafted items and "Dark Bargain" on quest
+// rewards. Both are passive dummy auras, and what identifies them here is the
+// TAG in EffectMiscValue - never a spell id. mod-forgotten-talents synthesises
+// the spell records for these nodes and its id map is sticky rather than
+// frozen, so an id copied into this file would be a promise the other module
+// never made. The tag is the promise; the rank's value rides in the amount.
+//
+// The item source therefore has to travel from the hook down to the roll, which
+// is what CursedContext is for - a looted or bought item must not pick up a
+// bonus that the player earned for crafting.
+constexpr int32 TALENT_TAG_CURSED_CRAFT = 76002;   // "Tainted Craft": extra percent points on crafted items
+constexpr int32 TALENT_TAG_CURSED_QUEST = 76003;   // "Dark Bargain": the same on quest rewards
+
+enum class CursedContext : uint8
+{
+    Loot,           // OnPlayerLootItem - no talent bonus
+    Create,         // OnPlayerCreateItem - TALENT_TAG_CURSED_CRAFT
+    QuestReward,    // OnPlayerQuestRewardItem - TALENT_TAG_CURSED_QUEST
+    Vendor          // OnPlayerAfterStoreOrEquipNewItem - no talent bonus
+};
 
 // ============================================================
 // Passive Spell Pool (spec-based)
@@ -495,14 +522,89 @@ static uint32 RollStatAmount(uint32 maxAmount)
     return static_cast<uint32>(dist(rng));
 }
 
-static bool RollCursed()
+static char const* CursedContextName(CursedContext context)
 {
-    if (conf_CursedChance <= 0.0f)
+    switch (context)
+    {
+        case CursedContext::Loot:        return "loot";
+        case CursedContext::Create:      return "create";
+        case CursedContext::QuestReward: return "quest";
+        case CursedContext::Vendor:      return "vendor";
+    }
+    return "unknown";
+}
+
+// Reads one Forgotten Talents tag off the player: the MAXIMUM GetAmount() over
+// the unit's passive dummy effects whose EffectMiscValue is that tag, 0 when
+// the tag is absent.
+//
+// The maximum, never the sum: the ranks of one node are separate spells, and a
+// player who bought rank 5 may still be carrying rank 1, in which case a sum
+// would pay for a rank nobody ever learned. A negative amount folds to 0
+// because a tag is a count here, and GetAmount() is already 0 for an aura the
+// core has disabled.
+//
+// Deliberately file-local and deliberately duplicated - mod-procedural-dungeon
+// keeps its own ten lines for its own tag. A shared header between two modules
+// that otherwise do not know each other would buy nothing and cost a build
+// dependency.
+static uint32 TaggedAuraAmount(Unit const* unit, int32 miscValue)
+{
+    if (!unit)
+        return 0;
+
+    int32 best = 0;
+    for (AuraEffect const* effect : unit->GetAuraEffectsByType(SPELL_AURA_DUMMY))
+    {
+        if (effect && effect->GetMiscValue() == miscValue && effect->GetAmount() > best)
+            best = effect->GetAmount();
+    }
+
+    return static_cast<uint32>(best);
+}
+
+// The effective cursed chance for this player and this item source: the
+// configured base plus the talent bonus in percent POINTS (CursedChance 50 and
+// a rank worth 10 make 60, not 55). Looted and bought items never get a bonus -
+// no node claims those sources - and the sum is clamped into 0..100 so a future
+// rank cannot push the roll past certainty or below the disabled state.
+static float CursedChanceFor(Player const* player, CursedContext context)
+{
+    float chance = conf_CursedChance;
+
+    if (conf_CursedTalentBonus && player)
+    {
+        int32 tag = 0;
+        if (context == CursedContext::Create)
+            tag = TALENT_TAG_CURSED_CRAFT;
+        else if (context == CursedContext::QuestReward)
+            tag = TALENT_TAG_CURSED_QUEST;
+
+        if (tag)
+            chance += static_cast<float>(TaggedAuraAmount(player, tag));
+    }
+
+    if (chance < 0.0f)
+        chance = 0.0f;
+    if (chance > 100.0f)
+        chance = 100.0f;
+
+    return chance;
+}
+
+static bool RollCursed(Player const* player, CursedContext context)
+{
+    float chance = CursedChanceFor(player, context);
+    if (chance <= 0.0f)
         return false;
 
     static thread_local std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> dist(0.0f, 100.0f);
-    return dist(rng) < conf_CursedChance;
+    bool cursed = dist(rng) < chance;
+
+    LOG_DEBUG("module", "ParagonItemGen: Cursed roll for player {} - context={}, baseChance={}%, effectiveChance={}%, cursed={}",
+        player ? player->GetName() : "<none>", CursedContextName(context), conf_CursedChance, chance, cursed);
+    return cursed;
 }
 
 static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 enchantId)
@@ -530,7 +632,9 @@ static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 
 // Core: Apply paragon enchantments to an item
 // ============================================================
 
-static void ApplyParagonEnchantment(Player* player, Item* item)
+// The context is the item source the hook stands for; it only ever reaches the
+// cursed roll, which is the one decision in here that differs per source.
+static void ApplyParagonEnchantment(Player* player, Item* item, CursedContext context)
 {
     if (!conf_Enable || !player || !item)
     {
@@ -572,8 +676,9 @@ static void ApplyParagonEnchantment(Player* player, Item* item)
 
     uint32 maxStatAmount = CalculateStatAmount(paragonLevel, item->GetTemplate()->Quality);
 
-    // Check for cursed roll (1% chance by default)
-    bool isCursed = RollCursed();
+    // Check for cursed roll (CursedChance, plus the Forgotten Talents bonus for
+    // crafted items and quest rewards - see CursedChanceFor)
+    bool isCursed = RollCursed(player, context);
 
     // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
     ParagonStatIndex cr1, cr2;
@@ -767,7 +872,7 @@ public:
         LOG_DEBUG("module", "ParagonItemGen: [OnLoot] Player {} looted item entry {} (conf_OnLoot={})",
             player->GetName(), item ? item->GetEntry() : 0, conf_OnLoot);
         if (conf_OnLoot)
-            ApplyParagonEnchantment(player, item);
+            ApplyParagonEnchantment(player, item, CursedContext::Loot);
     }
 
     void OnPlayerCreateItem(Player* player, Item* item, uint32 /*count*/) override
@@ -775,7 +880,7 @@ public:
         LOG_DEBUG("module", "ParagonItemGen: [OnCreate] Player {} created item entry {} (conf_OnCreate={})",
             player->GetName(), item ? item->GetEntry() : 0, conf_OnCreate);
         if (conf_OnCreate)
-            ApplyParagonEnchantment(player, item);
+            ApplyParagonEnchantment(player, item, CursedContext::Create);
     }
 
     void OnPlayerQuestRewardItem(Player* player, Item* item, uint32 /*count*/) override
@@ -783,7 +888,7 @@ public:
         LOG_DEBUG("module", "ParagonItemGen: [OnQuest] Player {} quest reward item entry {} (conf_OnQuest={})",
             player->GetName(), item ? item->GetEntry() : 0, conf_OnQuest);
         if (conf_OnQuest)
-            ApplyParagonEnchantment(player, item);
+            ApplyParagonEnchantment(player, item, CursedContext::QuestReward);
     }
 
     void OnPlayerAfterStoreOrEquipNewItem(Player* player, uint32 /*vendorslot*/, Item* item,
@@ -793,7 +898,7 @@ public:
         LOG_DEBUG("module", "ParagonItemGen: [OnVendor] Player {} vendor item entry {} (conf_OnVendor={})",
             player->GetName(), item ? item->GetEntry() : 0, conf_OnVendor);
         if (conf_OnVendor)
-            ApplyParagonEnchantment(player, item);
+            ApplyParagonEnchantment(player, item, CursedContext::Vendor);
     }
 
     // Trade restriction
@@ -924,6 +1029,7 @@ public:
         conf_CursedChance     = sConfigMgr->GetOption<float>("ParagonItemGen.CursedChance", 1.0f);
         conf_CursedMultiplier = sConfigMgr->GetOption<float>("ParagonItemGen.CursedMultiplier", 1.5f);
         conf_CursedVisualKit  = sConfigMgr->GetOption<uint32>("ParagonItemGen.CursedVisualKit", 5765);
+        conf_CursedTalentBonus = sConfigMgr->GetOption<bool>("ParagonItemGen.CursedTalentBonus", true);
 
         conf_PassiveSpellEnable = sConfigMgr->GetOption<bool>("ParagonItemGen.PassiveSpell.Enable", true);
         conf_PassiveSpellChance = sConfigMgr->GetOption<float>("ParagonItemGen.PassiveSpell.Chance", 100.0f);
@@ -931,12 +1037,12 @@ public:
         LOG_INFO("module", "ParagonItemGen: Config loaded - Enable={}, OnLoot={}, OnCreate={}, OnQuest={}, OnVendor={}, "
             "Scaling={}, MinPLevel={}, MinIlvl={}, BlockTrade={}, BlockMail={}, "
             "QMult=[Uncommon={}, Rare={}, Epic={}, Legendary={}], "
-            "CursedChance={}%, CursedMult={}x, CursedVisual={}, "
+            "CursedChance={}%, CursedMult={}x, CursedVisual={}, CursedTalentBonus={}, "
             "PassiveSpell={}, PassiveChance={}%",
             conf_Enable, conf_OnLoot, conf_OnCreate, conf_OnQuest, conf_OnVendor,
             conf_ScalingFactor, conf_MinParagonLevel, conf_MinItemLevel, conf_BlockTrade, conf_BlockMail,
             conf_QualityMult[2], conf_QualityMult[3], conf_QualityMult[4], conf_QualityMult[5],
-            conf_CursedChance, conf_CursedMultiplier, conf_CursedVisualKit,
+            conf_CursedChance, conf_CursedMultiplier, conf_CursedVisualKit, conf_CursedTalentBonus,
             conf_PassiveSpellEnable, conf_PassiveSpellChance);
     }
 };

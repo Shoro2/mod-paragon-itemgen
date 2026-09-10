@@ -72,6 +72,16 @@ ParagonItemGen.CursedMultiplier = 1.5
 # SpellVisualKit ID for the shadow animation on cursed roll
 # Default 5765 is a shadow/dark visual effect. Change to any SpellVisualKit.dbc entry.
 ParagonItemGen.CursedVisualKit = 5765
+#
+# Forgotten Talents bonus on the cursed chance (1 = on, 0 = off)
+# Two talent nodes raise the chance, each only for the item source it owns:
+# "Tainted Craft" (tag 76002) on crafted items, "Dark Bargain" (tag 76003) on
+# quest rewards. Looted and bought items never get a bonus.
+# The talent value is added as percent POINTS on top of CursedChance
+# (CursedChance 50.0 + a rank worth 10 = 60%), and the sum is capped at 100.
+# The module matches the tag in EffectMiscValue, never a spell id, so the
+# talents keep working when their spell records are re-generated.
+ParagonItemGen.CursedTalentBonus = 1
 
 ###############################################################################
 # PASSIVE SPELL EFFECTS
