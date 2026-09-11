@@ -61,6 +61,7 @@ Default ScalingFactor    = 0.5
 Default QualityMult      = 0.5 / 0.75 / 1.0 / 1.25 (uncommon/rare/epic/legendary)
 Default CursedChance     = 1.0 %
 Default CursedMultiplier = 1.5  (all stats × 1.5, capped at 666)
+Default CursedTalentBonus = 1  (Round E / WP6: FT aura tags 76002 craft / 76003 quest add percent points to CursedChance)
 ```
 
 Random roll per slot from 1 to `amount`. Details and config options: [`functions.md`](./functions.md#configuration).
