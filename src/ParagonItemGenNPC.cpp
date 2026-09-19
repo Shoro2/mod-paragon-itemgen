@@ -12,6 +12,7 @@
 #include "ScriptMgr.h"
 #include "Player.h"
 #include "ScriptedGossip.h"
+#include "SharedDefines.h"
 #include "DatabaseEnv.h"
 #include "CharacterDatabase.h"
 #include "Chat.h"
@@ -69,8 +70,24 @@ struct ClassSpecInfo
     uint8 count;
 };
 
+// The 21 Chapters-of-Azeroth classes (ids 12-32) have no ParagonSpec of their
+// own: a spec here is a key into paragon_spec_spell_assign, and that table is
+// authored per WotLK talent tree. Rather than leave a CoA character with an
+// empty menu and no passive spells on its cursed items for ever, the class is
+// asked under the stock class the core's GetLegacyClassForCustomClass() names
+// - the same fallback the core uses for every per-class constant WotLK
+// hard-codes. A class 26 Starcaller is therefore offered the four druid specs.
+//
+// The passive spells behind a spec are item enchantments (spell 11 effects on
+// the generated item), not class abilities, so a druid-keyed pool is usable by
+// a Starcaller; what it is NOT is tuned for it. Real CoA spec rows can be added
+// to paragon_spec_spell_assign later and this function then wants a real map -
+// there is no hidden magic to unpick, only this one call.
 static ClassSpecInfo GetClassSpecs(uint8 playerClass)
 {
+    if (IsAscensionClass(playerClass))
+        playerClass = static_cast<uint8>(GetLegacyClassForCustomClass(Classes(playerClass)));
+
     switch (playerClass)
     {
         case CLASS_WARRIOR:
@@ -138,6 +155,14 @@ public:
 
         // Show specs for this class
         ClassSpecInfo classSpecs = GetClassSpecs(player->getClass());
+
+        // Say it out loud rather than let a Starcaller wonder why the list
+        // reads like a druid's.
+        if (IsAscensionClass(player->getClass()))
+        {
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT,
+                "Your class has no specs of its own yet - these are the ones it inherits.", 0, 0);
+        }
 
         for (uint8 i = 0; i < classSpecs.count; ++i)
         {
