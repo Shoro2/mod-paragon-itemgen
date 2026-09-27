@@ -76,7 +76,8 @@ enum class CursedContext : uint8
     Loot,           // OnPlayerLootItem - no talent bonus
     Create,         // OnPlayerCreateItem - TALENT_TAG_CURSED_CRAFT
     QuestReward,    // OnPlayerQuestRewardItem - TALENT_TAG_CURSED_QUEST
-    Vendor          // OnPlayerAfterStoreOrEquipNewItem - no talent bonus
+    Vendor,         // OnPlayerAfterStoreOrEquipNewItem - no talent bonus
+    Module          // another module's request (ParagonItemGenRollCursed) - always cursed
 };
 
 // ============================================================
@@ -530,6 +531,7 @@ static char const* CursedContextName(CursedContext context)
         case CursedContext::Create:      return "create";
         case CursedContext::QuestReward: return "quest";
         case CursedContext::Vendor:      return "vendor";
+        case CursedContext::Module:      return "module";
     }
     return "unknown";
 }
@@ -639,26 +641,30 @@ static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 
 
 // The context is the item source the hook stands for; it only ever reaches the
 // cursed roll, which is the one decision in here that differs per source.
-static void ApplyParagonEnchantment(Player* player, Item* item, CursedContext context)
+// Another module's request (CursedContext::Module) is always cursed, may bring
+// the profile along (its rows may still be on their way to the DB) and may be
+// quiet: no chat line, no visual.
+static bool ApplyParagonEnchantment(Player* player, Item* item, CursedContext context,
+    ParagonRollProfile const* profile = nullptr, bool quiet = false)
 {
     if (!conf_Enable || !player || !item)
     {
         LOG_DEBUG("module", "ParagonItemGen: ApplyParagonEnchantment early exit - enable={}, player={}, item={}",
             conf_Enable, player != nullptr, item != nullptr);
-        return;
+        return false;
     }
 
     LOG_DEBUG("module", "ParagonItemGen: Attempting enchantment for player {} on item entry {} (guid {})",
         player->GetName(), item->GetEntry(), item->GetGUID().GetCounter());
 
     if (!IsEligibleItem(item))
-        return;
+        return false;
 
     if (ItemHasParagonEnchantment(item))
     {
         LOG_DEBUG("module", "ParagonItemGen: Item {} already has paragon enchantment, skipping",
             item->GetGUID().GetCounter());
-        return;
+        return false;
     }
 
     uint32 paragonLevel = GetPlayerParagonLevel(player);
@@ -666,24 +672,29 @@ static void ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
     {
         LOG_DEBUG("module", "ParagonItemGen: Player {} paragon level {} < minimum {}, skipping",
             player->GetName(), paragonLevel, conf_MinParagonLevel);
-        return;
+        return false;
     }
 
-    PlayerRoleInfo roleInfo = GetPlayerRoleInfo(player);
+    PlayerRoleInfo roleInfo = profile ?
+        PlayerRoleInfo{ profile->role, profile->mainStat, true } :
+        GetPlayerRoleInfo(player);
     if (!roleInfo.found)
     {
         LOG_DEBUG("module", "ParagonItemGen: Player {} has no role set, skipping",
             player->GetName());
-        ChatHandler(player->GetSession()).PSendSysMessage(
-            "|cffff0000[Paragon]|r Set your role first with: .paragon role tank|dps|healer");
-        return;
+        if (!quiet)
+            ChatHandler(player->GetSession()).PSendSysMessage(
+                "|cffff0000[Paragon]|r Set your role first with: .paragon role tank|dps|healer");
+        return false;
     }
 
     uint32 maxStatAmount = CalculateStatAmount(paragonLevel, item->GetTemplate()->Quality);
 
     // Check for cursed roll (CursedChance, plus the Forgotten Talents bonus for
     // crafted items and quest rewards - see CursedChanceFor)
-    bool isCursed = RollCursed(player, context);
+    // The kill switch holds for a forced curse too (RollCursed's first check).
+    bool isCursed = context == CursedContext::Module ?
+        conf_CursedChance > 0.0f : RollCursed(player, context);
 
     // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
     ParagonStatIndex cr1, cr2;
@@ -756,7 +767,7 @@ static void ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
 
     // Slot 4 (11): Passive spell effect (cursed only) OR cursed marker
     uint32 passiveEnchantId = 0;
-    ParagonSpec playerSpec = GetPlayerSpec(player);
+    ParagonSpec playerSpec = profile ? profile->spec : GetPlayerSpec(player);
 
     if (isCursed)
     {
@@ -781,7 +792,8 @@ static void ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
             item->SetBinding(true);
 
         // Play shadow visual on the player
-        player->SendPlaySpellVisual(conf_CursedVisualKit);
+        if (!quiet)
+            player->SendPlaySpellVisual(conf_CursedVisualKit);
     }
     // Normal items: no passive spell, slot 11 left empty
 
@@ -807,6 +819,9 @@ static void ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
         paragonLevel, RoleToName(roleInfo.role), StatIndexToName(roleInfo.mainStat),
         StatIndexToName(cr1), StatIndexToName(cr2),
         staAmount, mainAmount, cr1Amount, cr2Amount, isCursed);
+
+    if (quiet)
+        return true;
 
     if (isCursed && passiveEnchantId)
     {
@@ -853,6 +868,59 @@ static void ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
         ChatHandler(player->GetSession()).PSendSysMessage(
             "|cff00ff00[Paragon]|r Random properties on this item have been replaced by Paragon enchantments.");
     }
+    return true;
+}
+
+// ============================================================
+// API for other modules (ParagonItemGen.h)
+// ============================================================
+
+// character_paragon_role.mainStat holds the ITEM_MOD value (GetPlayerRoleInfo).
+static uint8 MainStatItemMod(ParagonStatIndex stat)
+{
+    switch (stat)
+    {
+        case PSTAT_AGILITY:   return 3;   // ITEM_MOD_AGILITY
+        case PSTAT_INTELLECT: return 5;   // ITEM_MOD_INTELLECT
+        case PSTAT_SPIRIT:    return 6;   // ITEM_MOD_SPIRIT
+        default:              return 4;   // ITEM_MOD_STRENGTH
+    }
+}
+
+void ParagonItemGenSetProfile(Player* player, ParagonRollProfile const& profile)
+{
+    if (!player)
+        return;
+
+    uint32 const guid = player->GetGUID().GetCounter();
+    uint8 const mainStat = MainStatItemMod(profile.mainStat);
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+
+    CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_PARAGON_ROLE);
+    stmt->SetData(0, guid);
+    stmt->SetData(1, static_cast<uint8>(profile.role));
+    stmt->SetData(2, static_cast<uint8>(profile.role));
+    trans->Append(stmt);
+
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_PARAGON_ROLE_MAINSTAT);
+    stmt->SetData(0, guid);
+    stmt->SetData(1, mainStat);
+    stmt->SetData(2, mainStat);
+    trans->Append(stmt);
+
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_PARAGON_SPEC);
+    stmt->SetData(0, guid);
+    stmt->SetData(1, static_cast<uint8>(profile.spec));
+    trans->Append(stmt);
+
+    CharacterDatabase.CommitTransaction(trans);
+}
+
+bool ParagonItemGenRollCursed(Player* player, Item* item,
+    ParagonRollProfile const* profile, bool quiet)
+{
+    return ApplyParagonEnchantment(player, item, CursedContext::Module, profile,
+        quiet);
 }
 
 // ============================================================

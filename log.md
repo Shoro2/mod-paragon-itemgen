@@ -4,6 +4,8 @@
 
 ## 2026
 
+- 2026-09-28 — feat(Core): an API for other modules - `ParagonItemGenSetProfile` (role, main stat, spec in one transaction) and `ParagonItemGenRollCursed` (a forced cursed roll with a given profile, optionally quiet; `CursedContext::Module`); `ApplyParagonEnchantment` reports success - for mod-ptr-template's templates (the operator: template gear rolls cursed at the Paragon level)
+
 - 2026-09-10 — feat(cursed): crafting and quest-reward cursed chance gains the Forgotten Talents tagged bonus (76002/76003) ([1605a7c](https://github.com/Shoro2/mod-paragon-itemgen/commit/1605a7cecfcec271144b4472e1ae978fbd5bc686)) — `RollCursed(Player const*, CursedContext)`, `CursedChanceFor` adds the tagged dummy-aura amount as percent points (clamped 0..100), `ParagonItemGen.CursedTalentBonus`; branch `claude/pdv2-round-e-63ac9a2a` (PDv2 Round E / WP6, not merged). Review fix ([547f4de](https://github.com/Shoro2/mod-paragon-itemgen/commit/547f4deb39e72e1731da2c5df5b791eff63b810d)): `RollCursed` gates on the raw `CursedChance <= 0` before the bonus, so `0 = disabled` stays a kill switch.
 
 - 2026-04-07 — fix(sql): create paragon_passive_spell_pool and paragon_spec_spell_assign ([7d18b36](https://github.com/Shoro2/mod-paragon-itemgen/commit/7d18b36430dcff50953bc3cc13983a7cd799fefb)) — `CREATE TABLE IF NOT EXISTS` before DELETE/INSERT; otherwise fresh AC servers aborted with a table error.

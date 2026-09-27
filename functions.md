@@ -101,6 +101,17 @@ When cursed:
 | `OnPlayerCanSetTradeItem` | Trade | block if `BlockTrade=true` and `targetParagonLevel < itemParagonLevel` |
 | `OnPlayerCanSendMail` | Mail | block if `BlockMail=true` and `recipientParagonLevel < itemParagonLevel` |
 
+## API for other modules (`ParagonItemGen.h`)
+
+For mod-ptr-template (its templates' gear, 2026-09-28):
+
+| Function | What |
+|---|---|
+| `ParagonItemGenSetProfile(Player*, ParagonRollProfile const&)` | stores the role, main stat and spec (`character_paragon_role`, `character_paragon_spec`) in one transaction - what the Paragon Artificer and `.paragon role|stat` write, without their rested-area check |
+| `ParagonItemGenRollCursed(Player*, Item*, ParagonRollProfile const*, bool quiet)` | `ApplyParagonEnchantment` with `CursedContext::Module`: always cursed (the kill switch `CursedChance = 0` still gives a normal roll), the given profile instead of the stored rows (nullptr: the stored ones - the rows just written may still be on their way), `quiet` = no chat line and no visual per item. False when the item is not eligible or already rolled, or the player has no Paragon level or no profile |
+
+`ParagonRollProfile` = `{ ParagonRole role; ParagonStatIndex mainStat; ParagonSpec spec; }` (main stat: `PSTAT_STRENGTH`, `_AGILITY`, `_INTELLECT` or `_SPIRIT`; stored as its ITEM_MOD value like the commands do).
+
 ## Eligibility check (`IsEligibleItem`)
 
 ```cpp

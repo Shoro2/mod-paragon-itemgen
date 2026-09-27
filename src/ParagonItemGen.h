@@ -142,6 +142,33 @@ enum ParagonRole : uint8
     ROLE_MAX
 };
 
+class Item;
+class Player;
+
+// For other modules (mod-ptr-template): what the Paragon Artificer and
+// `.paragon role|stat` store for a character - the role, the main stat
+// (PSTAT_STRENGTH, _AGILITY, _INTELLECT or _SPIRIT) and the spec.
+struct ParagonRollProfile
+{
+    ParagonRole role;
+    ParagonStatIndex mainStat;
+    ParagonSpec spec;
+};
+
+// Stores `profile` as the character's role, main stat and spec (what later
+// rolls on loot, crafts, quest rewards and purchases use); no rested-area
+// check, unlike the commands.
+void ParagonItemGenSetProfile(Player* player, ParagonRollProfile const& profile);
+
+// Rolls the Paragon enchantments on `item` as a CURSED roll at the player's
+// Paragon level, with `profile` (nullptr: the character's stored profile).
+// `quiet` drops the chat line and the visual per item. Respects the kill
+// switch (ParagonItemGen.CursedChance = 0: a normal roll). False when the
+// item is not eligible or already rolled, or the player has no Paragon
+// level or no profile.
+bool ParagonItemGenRollCursed(Player* player, Item* item,
+    ParagonRollProfile const* profile, bool quiet);
+
 // Shared helper: spec name lookup (defined in ParagonItemGenNPC.cpp)
 char const* ParagonSpecName(ParagonSpec spec);
 
