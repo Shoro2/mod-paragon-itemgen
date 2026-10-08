@@ -61,7 +61,8 @@ SPECS = {
 # concept lists some spells under several specs (Whirlwind unlimited: Arms and
 # Fury; Whirlwind -> Overpower: Arms; Thunder Clap Rend/Sunder: Arms and Prot;
 # Evocation power: all three mage specs)
-SPELL_SPECS = {901033: [18], 901035: [18], 901049: [19], 901051: [19],
+SPELL_SPECS = {901033: [18], 901035: [18], 901036: [18], 901037: [18], 901039: [18],
+               901049: [19], 901051: [19], 901052: [19], 901053: [19], 901054: [19],
                900108: [1, 2], 900118: [1], 900170: [1, 3], 900707: [23, 24, 25]}
 SPEC_NAMES = {1: "Arms", 2: "Fury", 3: "WarProt", 4: "HolyPala", 5: "ProtPala", 6: "Ret",
               7: "Blood", 8: "DKFrost", 9: "Unholy", 10: "Ele", 11: "Enhance", 12: "RestoSham",

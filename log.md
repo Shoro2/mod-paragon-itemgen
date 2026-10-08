@@ -4,6 +4,8 @@
 
 ## 2026
 
+- 2026-10-08 — feat(pool): the 45 passives of the operator's second concept list join the pool - `tools/gen_class_passives.py` places the new Feral lines (901036/901037/901039 tank, 901052-901054 DPS); 218 class passives, enchantments 950007-950224; the workbench loads 449 spec-spell assignments across 31 specs (T1); branch `claude/custom-spells-revision-c66d21fd`
+
 - 2026-10-08 — feat(pool): the custom class spells of mod-custom-spells' `/spells` picker are cursed-item passives - `tools/gen_class_passives.py` generates `paragon_passive_spells_class.sql` (173 spells, enchantments 950007-950179 frozen in `data/class_passive_enchants.json`, weight 10 per spec, concept spec placement, the four actives excluded); the six Arms rows moved there from `paragon_passive_spells.sql`; passive band 950001-950999 (`PARAGON_PASSIVE_ENCHANT_MAX`, `ItemGen_Server.lua`). T1: the workbench loads 404 spec-spell assignments across 31 specs; branch `claude/custom-spells-rework-c66d21fd`
 
 - 2026-09-28 — feat(Core): an API for other modules - `ParagonItemGenSetProfile` (role, main stat, spec in one transaction) and `ParagonItemGenRollCursed` (a forced cursed roll with a given profile, optionally quiet; `CursedContext::Module`); `ApplyParagonEnchantment` reports success - for mod-ptr-template's templates (the operator: template gear rolls cursed at the Paragon level)

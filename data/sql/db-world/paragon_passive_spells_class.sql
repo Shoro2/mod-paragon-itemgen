@@ -4,12 +4,12 @@
 -- (mod-custom-spells/data/spellbook_enUS.json) - edit the manifest or the
 -- tool, never this file. Enchantment ids are frozen in
 -- data/class_passive_enchants.json (items keep the id they rolled).
--- 173 spells, enchantments 950007-950179, weight 10 per spec (the stat passives
+-- 218 spells, enchantments 950007-950224, weight 10 per spec (the stat passives
 -- of paragon_passive_spells.sql weigh 100). Not in the pool: 900534 active (Barrage, a channel), 900713 active (Targeted Blink), 900741 active (Meteor), 900771 active (Comet Shower).
 -- =============================================================
 
 -- Effect_1 3 = ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL: the item casts EffectArg_1 on equip
-DELETE FROM `spellitemenchantment_dbc` WHERE `ID` BETWEEN 950007 AND 950179;
+DELETE FROM `spellitemenchantment_dbc` WHERE `ID` BETWEEN 950007 AND 950224;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
 (950007, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900100, 0, 0, 'Passive: Mortal Strike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950008, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900101, 0, 0, 'Passive: Mortal Strike: -2 sec Cooldown', 0, 0, 0, 0, 0, 0, 0),
@@ -63,7 +63,7 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950056, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900503, 0, 0, 'Passive: Pet: +50% Attack Speed', 0, 0, 0, 0, 0, 0, 0),
 (950057, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900504, 0, 0, 'Passive: Pet: Beast Cleave', 0, 0, 0, 0, 0, 0, 0),
 (950058, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900533, 0, 0, 'Passive: Auto Shot: Ricochet', 0, 0, 0, 0, 0, 0, 0),
-(950059, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900566, 0, 0, 'Passive: Explosive Shots', 0, 0, 0, 0, 0, 0, 0),
+(950059, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900566, 0, 0, 'Passive: Explosive Traps', 0, 0, 0, 0, 0, 0, 0),
 (950060, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900600, 0, 0, 'Passive: Energy: +50% Regeneration', 0, 0, 0, 0, 0, 0, 0),
 (950061, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900601, 0, 0, 'Passive: Mutilate: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950062, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900602, 0, 0, 'Passive: Poisons: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
@@ -130,7 +130,7 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950123, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900801, 0, 0, 'Passive: Corruption: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950124, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900802, 0, 0, 'Passive: Spreading Affliction', 0, 0, 0, 0, 0, 0, 0),
 (950125, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900833, 0, 0, 'Passive: Metamorphosis: Feast', 0, 0, 0, 0, 0, 0, 0),
-(950126, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900834, 0, 0, 'Passive: Metamorphosis: Shadow Pulse', 0, 0, 0, 0, 0, 0, 0),
+(950126, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900834, 0, 0, 'Passive: Metamorphosis: Fel Vigor', 0, 0, 0, 0, 0, 0, 0),
 (950127, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900835, 0, 0, 'Passive: Lesser Demons', 0, 0, 0, 0, 0, 0, 0),
 (950128, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900836, 0, 0, 'Passive: Imp: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950129, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900837, 0, 0, 'Passive: Imp: Firebolt +9 Targets', 0, 0, 0, 0, 0, 0, 0),
@@ -143,7 +143,7 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950136, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900870, 0, 0, 'Passive: Chaos Bolt: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
 (950137, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901000, 0, 0, 'Passive: Moonfire: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
 (950138, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901001, 0, 0, 'Passive: Moonfire: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
-(950139, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901002, 0, 0, 'Passive: Starfall: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950139, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901002, 0, 0, 'Passive: Starfall: +50% Area', 0, 0, 0, 0, 0, 0, 0),
 (950140, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901003, 0, 0, 'Passive: Starfall: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950141, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901004, 0, 0, 'Passive: Starfall: Starlight Reset', 0, 0, 0, 0, 0, 0, 0),
 (950142, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901005, 0, 0, 'Passive: Starfall: 10 Stacks', 0, 0, 0, 0, 0, 0, 0),
@@ -183,9 +183,54 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950176, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900714, 0, 0, 'Passive: Arcane Overflow', 0, 0, 0, 0, 0, 0, 0),
 (950177, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900715, 0, 0, 'Passive: Mirror Shield', 0, 0, 0, 0, 0, 0, 0),
 (950178, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900716, 0, 0, 'Passive: Mirror Images: Splash', 0, 0, 0, 0, 0, 0, 0),
-(950179, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901035, 0, 0, 'Passive: Maul: Bleeding Wounds', 0, 0, 0, 0, 0, 0, 0);
+(950179, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901035, 0, 0, 'Passive: Maul: Bleeding Wounds', 0, 0, 0, 0, 0, 0, 0),
+(950180, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900507, 0, 0, 'Passive: Pet: +100% Health', 0, 0, 0, 0, 0, 0, 0),
+(950181, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900525, 0, 0, 'Passive: Second Pet', 0, 0, 0, 0, 0, 0, 0),
+(950182, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900537, 0, 0, 'Passive: Multi-Shot: Serpent Sting', 0, 0, 0, 0, 0, 0, 0),
+(950183, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900538, 0, 0, 'Passive: Chimera Shot: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950184, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900539, 0, 0, 'Passive: Chimera Shot: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950185, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900540, 0, 0, 'Passive: Running Aim', 0, 0, 0, 0, 0, 0, 0),
+(950186, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900568, 0, 0, 'Passive: Blade and Shot', 0, 0, 0, 0, 0, 0, 0),
+(950187, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900571, 0, 0, 'Passive: Raptor Strike: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950188, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900572, 0, 0, 'Passive: Raptor Strike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950189, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900605, 0, 0, 'Passive: Mutilate: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950190, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900639, 0, 0, 'Passive: Adrenaline Rush: Unleashed', 0, 0, 0, 0, 0, 0, 0),
+(950191, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900642, 0, 0, 'Passive: Killing Spree: Fan of Knives', 0, 0, 0, 0, 0, 0, 0),
+(950192, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900670, 0, 0, 'Passive: Ambush: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950193, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900671, 0, 0, 'Passive: Ambush: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950194, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900672, 0, 0, 'Passive: Shadow Dance: Flow', 0, 0, 0, 0, 0, 0, 0),
+(950195, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900674, 0, 0, 'Passive: Frontal Assault', 0, 0, 0, 0, 0, 0, 0),
+(950196, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900904, 0, 0, 'Passive: Atonement', 0, 0, 0, 0, 0, 0, 0),
+(950197, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900905, 0, 0, 'Passive: Smite: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950198, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900906, 0, 0, 'Passive: Smite: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950199, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900935, 0, 0, 'Passive: Holy Fire: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950200, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900936, 0, 0, 'Passive: Holy Fire: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950201, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900937, 0, 0, 'Passive: Lightwell: Auto Renew', 0, 0, 0, 0, 0, 0, 0),
+(950202, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900938, 0, 0, 'Passive: Spirit of Redemption: Guardian', 0, 0, 0, 0, 0, 0, 0),
+(950203, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900941, 0, 0, 'Passive: Holy Nova: +50% Radius', 0, 0, 0, 0, 0, 0, 0),
+(950204, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900942, 0, 0, 'Passive: Holy Nova: Kindled Fire', 0, 0, 0, 0, 0, 0, 0),
+(950205, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900969, 0, 0, 'Passive: Shadow Word: Pain: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950206, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900970, 0, 0, 'Passive: Mind Blast: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950207, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900971, 0, 0, 'Passive: Mind Blast: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950208, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900972, 0, 0, 'Passive: Shadowform: Soul Feast', 0, 0, 0, 0, 0, 0, 0),
+(950209, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900975, 0, 0, 'Passive: Shadowform: Lesser Tentacles', 0, 0, 0, 0, 0, 0, 0),
+(950210, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900804, 0, 0, 'Passive: Withering Harvest', 0, 0, 0, 0, 0, 0, 0),
+(950211, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900846, 0, 0, 'Passive: Imp: Firebolt 50% Faster', 0, 0, 0, 0, 0, 0, 0),
+(950212, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900848, 0, 0, 'Passive: Voidwalker: Void Bulwark', 0, 0, 0, 0, 0, 0, 0),
+(950213, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900850, 0, 0, 'Passive: Succubus: Mass Seduction', 0, 0, 0, 0, 0, 0, 0),
+(950214, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900852, 0, 0, 'Passive: Felhunter: Area Spell Lock and Devour Magic', 0, 0, 0, 0, 0, 0, 0),
+(950215, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900858, 0, 0, 'Passive: Second Demon', 0, 0, 0, 0, 0, 0, 0),
+(950216, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900873, 0, 0, 'Passive: Hellfire: Free Movement', 0, 0, 0, 0, 0, 0, 0),
+(950217, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900875, 0, 0, 'Passive: Rain of Fire: Around You', 0, 0, 0, 0, 0, 0, 0),
+(950218, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901006, 0, 0, 'Passive: Lunar Frenzy', 0, 0, 0, 0, 0, 0, 0),
+(950219, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901036, 0, 0, 'Passive: Swipe (Bear): +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950220, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901037, 0, 0, 'Passive: Thorns: Open Wounds', 0, 0, 0, 0, 0, 0, 0),
+(950221, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901039, 0, 0, 'Passive: Ursine Bulwark', 0, 0, 0, 0, 0, 0, 0),
+(950222, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901052, 0, 0, 'Passive: Swipe (Cat): +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950223, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901053, 0, 0, 'Passive: Frontal Assault', 0, 0, 0, 0, 0, 0, 0),
+(950224, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901054, 0, 0, 'Passive: Berserk: Unleashed', 0, 0, 0, 0, 0, 0, 0);
 
-DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` BETWEEN 950007 AND 950179;
+DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` BETWEEN 950007 AND 950224;
 INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `category`, `minParagonLevel`, `minItemLevel`) VALUES
 (950007, 900100, 'Mortal Strike: +50% Damage', 0, 1, 0),
 (950008, 900101, 'Mortal Strike: -2 sec Cooldown', 0, 1, 0),
@@ -239,7 +284,7 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950056, 900503, 'Pet: +50% Attack Speed', 0, 1, 0),
 (950057, 900504, 'Pet: Beast Cleave', 0, 1, 0),
 (950058, 900533, 'Auto Shot: Ricochet', 0, 1, 0),
-(950059, 900566, 'Explosive Shots', 0, 1, 0),
+(950059, 900566, 'Explosive Traps', 0, 1, 0),
 (950060, 900600, 'Energy: +50% Regeneration', 0, 1, 0),
 (950061, 900601, 'Mutilate: +50% Damage', 0, 1, 0),
 (950062, 900602, 'Poisons: +50% Damage', 0, 1, 0),
@@ -306,7 +351,7 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950123, 900801, 'Corruption: +50% Damage', 0, 1, 0),
 (950124, 900802, 'Spreading Affliction', 0, 1, 0),
 (950125, 900833, 'Metamorphosis: Feast', 0, 1, 0),
-(950126, 900834, 'Metamorphosis: Shadow Pulse', 0, 1, 0),
+(950126, 900834, 'Metamorphosis: Fel Vigor', 0, 1, 0),
 (950127, 900835, 'Lesser Demons', 0, 1, 0),
 (950128, 900836, 'Imp: +50% Damage', 0, 1, 0),
 (950129, 900837, 'Imp: Firebolt +9 Targets', 0, 1, 0),
@@ -319,7 +364,7 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950136, 900870, 'Chaos Bolt: +9 Targets', 0, 1, 0),
 (950137, 901000, 'Moonfire: +9 Targets', 0, 1, 0),
 (950138, 901001, 'Moonfire: +50% Damage', 0, 1, 0),
-(950139, 901002, 'Starfall: +9 Targets', 0, 1, 0),
+(950139, 901002, 'Starfall: +50% Area', 0, 1, 0),
 (950140, 901003, 'Starfall: +50% Damage', 0, 1, 0),
 (950141, 901004, 'Starfall: Starlight Reset', 0, 1, 0),
 (950142, 901005, 'Starfall: 10 Stacks', 0, 1, 0),
@@ -359,9 +404,54 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950176, 900714, 'Arcane Overflow', 0, 1, 0),
 (950177, 900715, 'Mirror Shield', 0, 1, 0),
 (950178, 900716, 'Mirror Images: Splash', 0, 1, 0),
-(950179, 901035, 'Maul: Bleeding Wounds', 0, 1, 0);
+(950179, 901035, 'Maul: Bleeding Wounds', 0, 1, 0),
+(950180, 900507, 'Pet: +100% Health', 0, 1, 0),
+(950181, 900525, 'Second Pet', 0, 1, 0),
+(950182, 900537, 'Multi-Shot: Serpent Sting', 0, 1, 0),
+(950183, 900538, 'Chimera Shot: +9 Targets', 0, 1, 0),
+(950184, 900539, 'Chimera Shot: +50% Damage', 0, 1, 0),
+(950185, 900540, 'Running Aim', 0, 1, 0),
+(950186, 900568, 'Blade and Shot', 0, 1, 0),
+(950187, 900571, 'Raptor Strike: +9 Targets', 0, 1, 0),
+(950188, 900572, 'Raptor Strike: +50% Damage', 0, 1, 0),
+(950189, 900605, 'Mutilate: +9 Targets', 0, 1, 0),
+(950190, 900639, 'Adrenaline Rush: Unleashed', 0, 1, 0),
+(950191, 900642, 'Killing Spree: Fan of Knives', 0, 1, 0),
+(950192, 900670, 'Ambush: +9 Targets', 0, 1, 0),
+(950193, 900671, 'Ambush: +50% Damage', 0, 1, 0),
+(950194, 900672, 'Shadow Dance: Flow', 0, 1, 0),
+(950195, 900674, 'Frontal Assault', 0, 1, 0),
+(950196, 900904, 'Atonement', 0, 1, 0),
+(950197, 900905, 'Smite: +9 Targets', 0, 1, 0),
+(950198, 900906, 'Smite: +50% Damage', 0, 1, 0),
+(950199, 900935, 'Holy Fire: +9 Targets', 0, 1, 0),
+(950200, 900936, 'Holy Fire: +50% Damage', 0, 1, 0),
+(950201, 900937, 'Lightwell: Auto Renew', 0, 1, 0),
+(950202, 900938, 'Spirit of Redemption: Guardian', 0, 1, 0),
+(950203, 900941, 'Holy Nova: +50% Radius', 0, 1, 0),
+(950204, 900942, 'Holy Nova: Kindled Fire', 0, 1, 0),
+(950205, 900969, 'Shadow Word: Pain: +50% Damage', 0, 1, 0),
+(950206, 900970, 'Mind Blast: +50% Damage', 0, 1, 0),
+(950207, 900971, 'Mind Blast: +9 Targets', 0, 1, 0),
+(950208, 900972, 'Shadowform: Soul Feast', 0, 1, 0),
+(950209, 900975, 'Shadowform: Lesser Tentacles', 0, 1, 0),
+(950210, 900804, 'Withering Harvest', 0, 1, 0),
+(950211, 900846, 'Imp: Firebolt 50% Faster', 0, 1, 0),
+(950212, 900848, 'Voidwalker: Void Bulwark', 0, 1, 0),
+(950213, 900850, 'Succubus: Mass Seduction', 0, 1, 0),
+(950214, 900852, 'Felhunter: Area Spell Lock and Devour Magic', 0, 1, 0),
+(950215, 900858, 'Second Demon', 0, 1, 0),
+(950216, 900873, 'Hellfire: Free Movement', 0, 1, 0),
+(950217, 900875, 'Rain of Fire: Around You', 0, 1, 0),
+(950218, 901006, 'Lunar Frenzy', 0, 1, 0),
+(950219, 901036, 'Swipe (Bear): +50% Damage', 0, 1, 0),
+(950220, 901037, 'Thorns: Open Wounds', 0, 1, 0),
+(950221, 901039, 'Ursine Bulwark', 0, 1, 0),
+(950222, 901052, 'Swipe (Cat): +50% Damage', 0, 1, 0),
+(950223, 901053, 'Frontal Assault', 0, 1, 0),
+(950224, 901054, 'Berserk: Unleashed', 0, 1, 0);
 
-DELETE FROM `paragon_spec_spell_assign` WHERE `enchantmentId` BETWEEN 950007 AND 950179;
+DELETE FROM `paragon_spec_spell_assign` WHERE `enchantmentId` BETWEEN 950007 AND 950224;
 INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VALUES
 -- 900100 Mortal Strike: +50% Damage (Warrior Arms -> Arms)
 (1, 950007, 10),
@@ -467,7 +557,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (13, 950057, 10),
 -- 900533 Auto Shot: Ricochet (Hunter Marksmanship -> MM)
 (14, 950058, 10),
--- 900566 Explosive Shots (Hunter Survival -> Surv)
+-- 900566 Explosive Traps (Hunter Survival -> Surv)
 (15, 950059, 10),
 -- 900600 Energy: +50% Regeneration (Rogue Assassination -> Assa)
 (20, 950060, 10),
@@ -601,7 +691,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (26, 950124, 10),
 -- 900833 Metamorphosis: Feast (Warlock Demonology -> Demo)
 (27, 950125, 10),
--- 900834 Metamorphosis: Shadow Pulse (Warlock Demonology -> Demo)
+-- 900834 Metamorphosis: Fel Vigor (Warlock Demonology -> Demo)
 (27, 950126, 10),
 -- 900835 Lesser Demons (Warlock Demonology -> Demo)
 (27, 950127, 10),
@@ -627,7 +717,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (16, 950137, 10),
 -- 901001 Moonfire: +50% Damage (Druid Balance -> Balance)
 (16, 950138, 10),
--- 901002 Starfall: +9 Targets (Druid Balance -> Balance)
+-- 901002 Starfall: +50% Area (Druid Balance -> Balance)
 (16, 950139, 10),
 -- 901003 Starfall: +50% Damage (Druid Balance -> Balance)
 (16, 950140, 10),
@@ -708,4 +798,94 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- 900716 Mirror Images: Splash (Mage Arcane -> Arcane)
 (23, 950178, 10),
 -- 901035 Maul: Bleeding Wounds (Druid Feral -> FeralTank)
-(18, 950179, 10);
+(18, 950179, 10),
+-- 900507 Pet: +100% Health (Hunter Beast Mastery -> BM)
+(13, 950180, 10),
+-- 900525 Second Pet (Hunter Beast Mastery -> BM)
+(13, 950181, 10),
+-- 900537 Multi-Shot: Serpent Sting (Hunter Marksmanship -> MM)
+(14, 950182, 10),
+-- 900538 Chimera Shot: +9 Targets (Hunter Marksmanship -> MM)
+(14, 950183, 10),
+-- 900539 Chimera Shot: +50% Damage (Hunter Marksmanship -> MM)
+(14, 950184, 10),
+-- 900540 Running Aim (Hunter Marksmanship -> MM)
+(14, 950185, 10),
+-- 900568 Blade and Shot (Hunter Survival -> Surv)
+(15, 950186, 10),
+-- 900571 Raptor Strike: +9 Targets (Hunter Survival -> Surv)
+(15, 950187, 10),
+-- 900572 Raptor Strike: +50% Damage (Hunter Survival -> Surv)
+(15, 950188, 10),
+-- 900605 Mutilate: +9 Targets (Rogue Assassination -> Assa)
+(20, 950189, 10),
+-- 900639 Adrenaline Rush: Unleashed (Rogue Combat -> Combat)
+(21, 950190, 10),
+-- 900642 Killing Spree: Fan of Knives (Rogue Combat -> Combat)
+(21, 950191, 10),
+-- 900670 Ambush: +9 Targets (Rogue Subtlety -> Sub)
+(22, 950192, 10),
+-- 900671 Ambush: +50% Damage (Rogue Subtlety -> Sub)
+(22, 950193, 10),
+-- 900672 Shadow Dance: Flow (Rogue Subtlety -> Sub)
+(22, 950194, 10),
+-- 900674 Frontal Assault (Rogue Subtlety -> Sub)
+(22, 950195, 10),
+-- 900904 Atonement (Priest Discipline -> Disc)
+(29, 950196, 10),
+-- 900905 Smite: +9 Targets (Priest Discipline -> Disc)
+(29, 950197, 10),
+-- 900906 Smite: +50% Damage (Priest Discipline -> Disc)
+(29, 950198, 10),
+-- 900935 Holy Fire: +9 Targets (Priest Holy -> HolyPri)
+(30, 950199, 10),
+-- 900936 Holy Fire: +50% Damage (Priest Holy -> HolyPri)
+(30, 950200, 10),
+-- 900937 Lightwell: Auto Renew (Priest Holy -> HolyPri)
+(30, 950201, 10),
+-- 900938 Spirit of Redemption: Guardian (Priest Holy -> HolyPri)
+(30, 950202, 10),
+-- 900941 Holy Nova: +50% Radius (Priest Holy -> HolyPri)
+(30, 950203, 10),
+-- 900942 Holy Nova: Kindled Fire (Priest Holy -> HolyPri)
+(30, 950204, 10),
+-- 900969 Shadow Word: Pain: +50% Damage (Priest Shadow -> Shadow)
+(31, 950205, 10),
+-- 900970 Mind Blast: +50% Damage (Priest Shadow -> Shadow)
+(31, 950206, 10),
+-- 900971 Mind Blast: +9 Targets (Priest Shadow -> Shadow)
+(31, 950207, 10),
+-- 900972 Shadowform: Soul Feast (Priest Shadow -> Shadow)
+(31, 950208, 10),
+-- 900975 Shadowform: Lesser Tentacles (Priest Shadow -> Shadow)
+(31, 950209, 10),
+-- 900804 Withering Harvest (Warlock Affliction -> Affli)
+(26, 950210, 10),
+-- 900846 Imp: Firebolt 50% Faster (Warlock Demonology -> Demo)
+(27, 950211, 10),
+-- 900848 Voidwalker: Void Bulwark (Warlock Demonology -> Demo)
+(27, 950212, 10),
+-- 900850 Succubus: Mass Seduction (Warlock Demonology -> Demo)
+(27, 950213, 10),
+-- 900852 Felhunter: Area Spell Lock and Devour Magic (Warlock Demonology -> Demo)
+(27, 950214, 10),
+-- 900858 Second Demon (Warlock Demonology -> Demo)
+(27, 950215, 10),
+-- 900873 Hellfire: Free Movement (Warlock Destruction -> Destro)
+(28, 950216, 10),
+-- 900875 Rain of Fire: Around You (Warlock Destruction -> Destro)
+(28, 950217, 10),
+-- 901006 Lunar Frenzy (Druid Balance -> Balance)
+(16, 950218, 10),
+-- 901036 Swipe (Bear): +50% Damage (Druid Feral -> FeralTank)
+(18, 950219, 10),
+-- 901037 Thorns: Open Wounds (Druid Feral -> FeralTank)
+(18, 950220, 10),
+-- 901039 Ursine Bulwark (Druid Feral -> FeralTank)
+(18, 950221, 10),
+-- 901052 Swipe (Cat): +50% Damage (Druid Feral -> FeralDPS)
+(19, 950222, 10),
+-- 901053 Frontal Assault (Druid Feral -> FeralDPS)
+(19, 950223, 10),
+-- 901054 Berserk: Unleashed (Druid Feral -> FeralDPS)
+(19, 950224, 10);
