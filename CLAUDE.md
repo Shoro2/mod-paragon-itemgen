@@ -44,7 +44,7 @@ Trade/mail restriction: items are cross-checked against the recipient's Paragon 
 | | `spellitemenchantment_dbc` | DBC override with ~11,323 custom enchantments |
 | **Custom enchantments** | 900001-916666 | 17 stats × 666 levels, formula `900000 + statIndex × 1000 + amount` |
 | | 920001 | "Cursed" marker (label only) |
-| | 950001-950099 | Passive-spell enchantments (cursed items only) |
+| | 950001-950999 | Passive-spell enchantments (cursed items only): 950001-950006 stat passives, 950007+ the custom class spells (`tools/gen_class_passives.py`) |
 | **Custom spells** | only uses the passives from `paragon_passive_spell_pool` |
 | **AIO handler names** | `Paragon_ItemGen` (server) / `Paragon_ItemGen_Client` (client) | for tooltip display |
 | **Slash commands** | (none) | |

@@ -189,7 +189,7 @@ static bool IsParagonEnchantment(uint32 enchantId)
     if (enchantId == PARAGON_ENCHANT_CURSED_ID)
         return true;
 
-    // Passive spell enchantments (950001-950099)
+    // Passive spell enchantments (950001-950999)
     if (enchantId >= PARAGON_PASSIVE_ENCHANT_MIN && enchantId <= PARAGON_PASSIVE_ENCHANT_MAX)
         return true;
 

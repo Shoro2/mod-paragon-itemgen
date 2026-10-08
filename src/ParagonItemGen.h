@@ -34,7 +34,7 @@ constexpr uint8 PARAGON_SLOT_TALENT_SPELL  = 11; // PROP_ENCHANTMENT_SLOT_4
 
 // Passive spell enchantment ID range (spellitemenchantment_dbc)
 constexpr uint32 PARAGON_PASSIVE_ENCHANT_MIN = 950001;
-constexpr uint32 PARAGON_PASSIVE_ENCHANT_MAX = 950099;
+constexpr uint32 PARAGON_PASSIVE_ENCHANT_MAX = 950999;
 
 // NPC entry for spec selection gossip
 constexpr uint32 PARAGON_SPEC_NPC_ENTRY = 900100;

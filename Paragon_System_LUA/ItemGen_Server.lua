@@ -22,7 +22,7 @@ local ENCHANT_STRIDE   = 1000
 local ENCHANT_MAX_STAT = 16
 local ENCHANT_CURSED   = 920001
 local PASSIVE_MIN      = 950001
-local PASSIVE_MAX      = 950099
+local PASSIVE_MAX      = 950999
 
 -- ============================================================
 -- Passive spell name cache (loaded from world DB)
