@@ -1,6 +1,12 @@
 # mod-paragon-itemgen
 
-> Read [`INDEX.md`](./INDEX.md) first. Mechanics, hooks, scaling formula: [`functions.md`](./functions.md). Folder layout: [`data_structure.md`](./data_structure.md). Open items: [`todo.md`](./todo.md). Commit trail: [`log.md`](./log.md).
+> **Internal docs live in the vault, not here** (rule since 2026-10-18: this public repo keeps only
+> README.md with the general info and installation, this CLAUDE.md, the license and the code).
+> Index, data structure, functions, log and todo: share-public `docs/World of Warcraft/module-repos/mod-paragon-itemgen/`
+> (local checkout `C:\Users\Anwender\Documents\GitHub\share-public`). Update them there,
+> in a vault worktree, in the same session as the code change.
+
+> Read [`INDEX.md`](https://github.com/Shoro2/share-public/blob/main/docs/World%20of%20Warcraft/module-repos/mod-paragon-itemgen/00-index.md) first. Mechanics, hooks, scaling formula: [`functions.md`](https://github.com/Shoro2/share-public/blob/main/docs/World%20of%20Warcraft/module-repos/mod-paragon-itemgen/functions.md). Folder layout: [`data_structure.md`](https://github.com/Shoro2/share-public/blob/main/docs/World%20of%20Warcraft/module-repos/mod-paragon-itemgen/data_structure.md). Open items: [`todo.md`](https://github.com/Shoro2/share-public/blob/main/docs/World%20of%20Warcraft/module-repos/mod-paragon-itemgen/todo.md). Commit trail: [`log.md`](https://github.com/Shoro2/share-public/blob/main/docs/World%20of%20Warcraft/module-repos/mod-paragon-itemgen/log.md).
 
 ## What is the module?
 
@@ -64,7 +70,7 @@ Default CursedMultiplier = 1.5  (all stats × 1.5, capped at 666)
 Default CursedTalentBonus = 1  (Round E / WP6: FT aura tags 76002 craft / 76003 quest add percent points to CursedChance)
 ```
 
-Random roll per slot from 1 to `amount`. Details and config options: [`functions.md`](./functions.md#configuration).
+Random roll per slot from 1 to `amount`. Details and config options: [`functions.md`](https://github.com/Shoro2/share-public/blob/main/docs/World%20of%20Warcraft/module-repos/mod-paragon-itemgen/functions.md#configuration).
 
 ## Role pools (combat ratings)
 
@@ -85,7 +91,7 @@ The DPS pool is selected automatically via `mainStat`.
 ## What this module does **not** do
 
 - **no** re-enchanting of existing items (stats are permanent — only newly acquired items get enchanted)
-- **no** auction-house block (see [`todo.md`](./todo.md) — `CanCreateAuction` hook is missing in the AzerothCore core)
+- **no** auction-house block (see [`todo.md`](https://github.com/Shoro2/share-public/blob/main/docs/World%20of%20Warcraft/module-repos/mod-paragon-itemgen/todo.md) — `CanCreateAuction` hook is missing in the AzerothCore core)
 - **no** stat re-roll for the player
 
 ## Architecture notes
