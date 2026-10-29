@@ -47,7 +47,11 @@ static uint32 conf_MinParagonLevel = 1;
 static uint32 conf_MinItemLevel    = 150;
 static bool   conf_BlockTrade      = true;
 static bool   conf_BlockMail       = true;
-static float  conf_CursedChance    = 50.0f;
+static float  conf_CursedChance    = 50.0f;   // the switch since 2026-10-29: 0 = off, anything else = on
+static float  conf_CursedChanceLevel0 = 0.5f; // the chance at Paragon level 0 ...
+static float  conf_CursedChanceCap    = 2.0f; // ... rising evenly to this at CapLevel and above
+static uint32 conf_CursedChanceCapLevel = 200;
+static float  conf_CursedTalentScale = 0.04f; // the talent points shrink with the base (50 % -> 2 %: 1/25)
 static float  conf_CursedMultiplier = 1.5f;
 static uint32 conf_CursedVisualKit = 5765;
 static bool   conf_CursedTalentBonus = true;
@@ -574,7 +578,18 @@ static uint32 TaggedAuraAmount(Unit const* unit, int32 miscValue)
 // rank cannot push the roll past certainty or below the disabled state.
 static float CursedChanceFor(Player const* player, CursedContext context)
 {
-    float chance = conf_CursedChance;
+    // The operator 2026-10-29 (testers give themselves cursed items with .additem ... cursed now): "cursed chance
+    // abhängig von paragon level, soll auf lvl 0 eine 0,5% chance haben, und dann bis paragon 200 auf 2% ansteigen.
+    // also ultra selten. über paragon 200 bleibt es bei 2%" - the base rises evenly from Level0 to Cap over
+    // 0..CapLevel and stays at Cap above it.
+    float chance = conf_CursedChanceLevel0;
+    if (player)
+    {
+        uint32 const level = GetPlayerParagonLevel(const_cast<Player*>(player));
+        float const share = conf_CursedChanceCapLevel
+            ? std::min(1.0f, static_cast<float>(level) / static_cast<float>(conf_CursedChanceCapLevel)) : 1.0f;
+        chance = conf_CursedChanceLevel0 + (conf_CursedChanceCap - conf_CursedChanceLevel0) * share;
+    }
 
     if (conf_CursedTalentBonus && player)
     {
@@ -585,7 +600,7 @@ static float CursedChanceFor(Player const* player, CursedContext context)
             tag = TALENT_TAG_CURSED_QUEST;
 
         if (tag)
-            chance += static_cast<float>(TaggedAuraAmount(player, tag));
+            chance += static_cast<float>(TaggedAuraAmount(player, tag)) * conf_CursedTalentScale;  // the operator 2026-10-29: "a"
     }
 
     if (chance < 0.0f)
@@ -1110,6 +1125,10 @@ public:
         conf_QualityMult[5]  = sConfigMgr->GetOption<float>("ParagonItemGen.QualityMult.Legendary", 1.25f);
 
         conf_CursedChance     = sConfigMgr->GetOption<float>("ParagonItemGen.CursedChance", 1.0f);
+        conf_CursedChanceLevel0 = sConfigMgr->GetOption<float>("ParagonItemGen.CursedChance.Level0", 0.5f);
+        conf_CursedChanceCap    = sConfigMgr->GetOption<float>("ParagonItemGen.CursedChance.Cap", 2.0f);
+        conf_CursedChanceCapLevel = sConfigMgr->GetOption<uint32>("ParagonItemGen.CursedChance.CapLevel", 200);
+        conf_CursedTalentScale  = sConfigMgr->GetOption<float>("ParagonItemGen.CursedTalentScale", 0.04f);
         conf_CursedMultiplier = sConfigMgr->GetOption<float>("ParagonItemGen.CursedMultiplier", 1.5f);
         conf_CursedVisualKit  = sConfigMgr->GetOption<uint32>("ParagonItemGen.CursedVisualKit", 5765);
         conf_CursedTalentBonus = sConfigMgr->GetOption<bool>("ParagonItemGen.CursedTalentBonus", true);
@@ -1120,12 +1139,13 @@ public:
         LOG_INFO("module", "ParagonItemGen: Config loaded - Enable={}, OnLoot={}, OnCreate={}, OnQuest={}, OnVendor={}, "
             "Scaling={}, MinPLevel={}, MinIlvl={}, BlockTrade={}, BlockMail={}, "
             "QMult=[Uncommon={}, Rare={}, Epic={}, Legendary={}], "
-            "CursedChance={}%, CursedMult={}x, CursedVisual={}, CursedTalentBonus={}, "
+            "CursedChance={} (switch), Level0={}%, Cap={}% at Paragon {}, CursedMult={}x, CursedVisual={}, CursedTalentBonus={}, "
             "PassiveSpell={}, PassiveChance={}%",
             conf_Enable, conf_OnLoot, conf_OnCreate, conf_OnQuest, conf_OnVendor,
             conf_ScalingFactor, conf_MinParagonLevel, conf_MinItemLevel, conf_BlockTrade, conf_BlockMail,
             conf_QualityMult[2], conf_QualityMult[3], conf_QualityMult[4], conf_QualityMult[5],
-            conf_CursedChance, conf_CursedMultiplier, conf_CursedVisualKit, conf_CursedTalentBonus,
+            conf_CursedChance, conf_CursedChanceLevel0, conf_CursedChanceCap, conf_CursedChanceCapLevel,
+            conf_CursedMultiplier, conf_CursedVisualKit, conf_CursedTalentBonus,
             conf_PassiveSpellEnable, conf_PassiveSpellChance);
     }
 };

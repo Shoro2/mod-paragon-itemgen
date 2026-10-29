@@ -63,8 +63,14 @@ ParagonItemGen.BlockMail  = 1
 # Cursed items get all stats at CursedMultiplier * max value and become soulbound.
 # A shadow visual plays on the player when this happens.
 #
-# Chance in percent (0 = disabled, 1.0 = 1% chance)
+# Switch: 0 = no cursed items at all, any other value = on. (Until 2026-10-29 this was the chance itself.)
 ParagonItemGen.CursedChance = 50.0
+#
+# The chance in percent rises evenly with the account's Paragon level: Level0 at Paragon 0, Cap at CapLevel,
+# Cap above it (the operator 2026-10-29: 0.5 % at level 0 to 2 % at Paragon 200, "ultra selten").
+ParagonItemGen.CursedChance.Level0 = 0.5
+ParagonItemGen.CursedChance.Cap = 2.0
+ParagonItemGen.CursedChance.CapLevel = 200
 #
 # Stat multiplier for cursed items (1.5 = 150% of max stat value)
 ParagonItemGen.CursedMultiplier = 1.5
@@ -78,12 +84,14 @@ ParagonItemGen.CursedVisualKit = 5765
 # "Tainted Craft" (tag 76002) on crafted items, "Dark Bargain" (tag 76003) on
 # quest rewards. Looted and bought items never get a bonus.
 # The talent value is added as percent POINTS on top of CursedChance
-# (CursedChance 50.0 + a rank worth 10 = 60%), and the sum is capped at 100.
+# times CursedTalentScale (since 2026-10-29 0.04: the base went from 50 % to 2 %, the talents shrink alike -
+# a rank worth 10 adds 0.4 points), and the sum is capped at 100.
 # The module matches the tag in EffectMiscValue, never a spell id, so the
 # talents keep working when their spell records are re-generated.
 # CursedChance = 0 still disables cursed items entirely: the bonus can only
 # raise a chance that is already allowed, it never re-enables a disabled roll.
 ParagonItemGen.CursedTalentBonus = 1
+ParagonItemGen.CursedTalentScale = 0.04
 
 ###############################################################################
 # PASSIVE SPELL EFFECTS
