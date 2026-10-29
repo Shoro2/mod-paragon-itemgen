@@ -77,7 +77,8 @@ enum class CursedContext : uint8
     Create,         // OnPlayerCreateItem - TALENT_TAG_CURSED_CRAFT
     QuestReward,    // OnPlayerQuestRewardItem - TALENT_TAG_CURSED_QUEST
     Vendor,         // OnPlayerAfterStoreOrEquipNewItem - no talent bonus
-    Module          // another module's request (ParagonItemGenRollCursed) - always cursed
+    Module,         // another module's request (ParagonItemGenRollCursed) - always cursed
+    Command         // a GM's .additem (OnPlayerAddItemByCommand) - never cursed; ".additem ... cursed" uses Module
 };
 
 // ============================================================
@@ -532,6 +533,7 @@ static char const* CursedContextName(CursedContext context)
         case CursedContext::QuestReward: return "quest";
         case CursedContext::Vendor:      return "vendor";
         case CursedContext::Module:      return "module";
+        case CursedContext::Command:     return "command";
     }
     return "unknown";
 }
@@ -693,8 +695,8 @@ static bool ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
     // Check for cursed roll (CursedChance, plus the Forgotten Talents bonus for
     // crafted items and quest rewards - see CursedChanceFor)
     // The kill switch holds for a forced curse too (RollCursed's first check).
-    bool isCursed = context == CursedContext::Module ?
-        conf_CursedChance > 0.0f : RollCursed(player, context);
+    bool isCursed = context == CursedContext::Module ? conf_CursedChance > 0.0f :
+        context == CursedContext::Command ? false : RollCursed(player, context);
 
     // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
     ParagonStatIndex cr1, cr2;
@@ -936,6 +938,7 @@ public:
         PLAYERHOOK_ON_CREATE_ITEM,
         PLAYERHOOK_ON_QUEST_REWARD_ITEM,
         PLAYERHOOK_ON_AFTER_STORE_OR_EQUIP_NEW_ITEM,
+        PLAYERHOOK_ON_ADD_ITEM_BY_COMMAND,
         PLAYERHOOK_CAN_SET_TRADE_ITEM,
         PLAYERHOOK_CAN_SEND_MAIL
     }) { }
@@ -972,6 +975,13 @@ public:
             player->GetName(), item ? item->GetEntry() : 0, conf_OnVendor);
         if (conf_OnVendor)
             ApplyParagonEnchantment(player, item, CursedContext::Vendor);
+    }
+
+    // A GM's .additem rolls like a drop, never cursed - unless the command ends in "cursed" (the operator
+    // 2026-10-29: "cursed als Zusatzparameter einbauen, standardmäßig ohne parameter aber off")
+    void OnPlayerAddItemByCommand(Player* player, Item* item, uint32 /*count*/, bool cursed) override
+    {
+        ApplyParagonEnchantment(player, item, cursed ? CursedContext::Module : CursedContext::Command);
     }
 
     // Trade restriction

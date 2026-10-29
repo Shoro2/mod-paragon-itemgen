@@ -1,0 +1,27 @@
+# mod-paragon-itemgen: a GM's .additem rolls the item as a drop would, never cursed - and cursed with the
+# trailing word "cursed" (operator 2026-10-29: "cursed als zusatzparameter einbauen, standardmäßig ohne
+# parameter aber off"). The bot (Paragon 50) gets three plain .additem copies of a level-200 plate chest and
+# one ".additem ... cursed" of another (role dps / strength set first); the scenario only places them - the rolls are read afterwards from
+# acore_characters.character_paragon_item (rolled: 4 rows; cursed = 1 only on the 37612).
+name    Paragon item gen - .additem rolls, "cursed" makes it cursed
+timeout 60s
+
+bot q warrior slot=6 paragon=50
+
+# a role is needed for any roll; .paragon role / stat only work in a rested area (Stormwind)
+place 0 -8828.0 647.0 94.3 0
+require q alive
+as q .paragon role dps
+as q .paragon stat strength
+do gm target q
+as gm .additem 37395 1
+as gm .additem 37395 1
+as gm .additem 37395 1
+as gm .additem 37612 1 cursed
+wait 1s
+expect q item 37395 == 3
+expect q item 37612 == 1
+
+cleanup
+do q destroy 37395
+do q destroy 37612
