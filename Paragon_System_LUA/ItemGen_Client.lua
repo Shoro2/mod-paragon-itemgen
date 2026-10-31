@@ -394,10 +394,10 @@ local SLOT_NAMES = {
 	[16] = "Main Hand", [17] = "Off Hand", [18] = "Ranged", [19] = "Tabard",
 }
 local PANEL_ROWS = 19
-local ROW_HEIGHT = 30
+local ROW_HEIGHT = 18   -- one line per slot: all 19 slots fit the sheet's height, no scrolling (operator 2026-10-31)
 
 local panel = CreateFrame("Frame", "ParagonPassivePanel", PaperDollFrame)
-panel:SetWidth(230)
+panel:SetWidth(260)
 panel:SetHeight(424)
 panel:SetPoint("TOPLEFT", CharacterFrame, "TOPRIGHT", -34, -12)
 panel:SetBackdrop({
@@ -424,21 +424,32 @@ panelCount:SetPoint("BOTTOM", 0, 20)
 local rows = {}
 for i = 1, PANEL_ROWS do
 	local row = CreateFrame("Button", nil, panel)
-	row:SetHeight(ROW_HEIGHT - 2)
-	row:SetPoint("TOPLEFT", 18, -44 - (i - 1) * ROW_HEIGHT)
-	row:SetPoint("RIGHT", -18, 0)
+	row:SetHeight(ROW_HEIGHT - 1)
+	row:SetPoint("TOPLEFT", 16, -42 - (i - 1) * ROW_HEIGHT)
+	row:SetPoint("RIGHT", -16, 0)
 
-	row.icon = row:CreateTexture(nil, "ARTWORK")
-	row.icon:SetSize(24, 24)
-	row.icon:SetPoint("LEFT", 0, 0)
+	-- red behind every copy of a passive but the first (operator 2026-10-31: "wenn etwas mehrfach vorhanden
+	-- ist soll alles bis auf eins des spells rot hinterlegt sein")
+	row.dup = row:CreateTexture(nil, "BACKGROUND")
+	row.dup:SetAllPoints()
+	row.dup:SetTexture(0.75, 0.05, 0.05, 0.45)
+	row.dup:Hide()
 
 	row.slot = row:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	row.slot:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 6, 0)
+	row.slot:SetPoint("LEFT", 2, 0)
+	row.slot:SetWidth(56)
+	row.slot:SetJustifyH("LEFT")
+
+	row.icon = row:CreateTexture(nil, "ARTWORK")
+	row.icon:SetSize(16, 16)
+	row.icon:SetPoint("LEFT", row.slot, "RIGHT", 2, 0)
+	row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
 	row.name = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	row.name:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 6, 0)
-	row.name:SetPoint("RIGHT", 0, 0)
+	row.name:SetPoint("LEFT", row.icon, "RIGHT", 4, 0)
+	row.name:SetPoint("RIGHT", -2, 0)
 	row.name:SetJustifyH("LEFT")
+	row.name:SetWordWrap(false)
 
 	row:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -446,6 +457,9 @@ for i = 1, PANEL_ROWS do
 			GameTooltip:SetHyperlink("spell:" .. self.spellId)
 		elseif self.invSlot then
 			GameTooltip:SetInventoryItem("player", self.invSlot)
+		end
+		if self.isDuplicate then
+			GameTooltip:AddLine("Already active on another slot.", 1, 0.25, 0.25)
 		end
 		GameTooltip:Show()
 	end)
@@ -456,6 +470,7 @@ end
 
 UpdatePassivePanel = function()
 	local n, passives = 0, 0
+	local seen = {}   -- passive (spell id, else name) -> already listed
 	for invSlot = 1, 19 do
 		local data = equipCache[invSlot]
 		if data and data.cursed then
@@ -463,6 +478,10 @@ UpdatePassivePanel = function()
 			local row = rows[n]
 			row.invSlot = invSlot
 			row.spellId = data.passiveSpell
+			local key = data.passiveSpell or data.passiveName
+			row.isDuplicate = key ~= nil and seen[key] == true
+			if key then seen[key] = true end
+			if row.isDuplicate then row.dup:Show() else row.dup:Hide() end
 			row.slot:SetText(SLOT_NAMES[invSlot] or "")
 			local icon = data.passiveSpell and select(3, GetSpellInfo(data.passiveSpell))
 			if data.passiveName then
@@ -478,7 +497,13 @@ UpdatePassivePanel = function()
 	end
 	for i = n + 1, PANEL_ROWS do rows[i]:Hide() end
 	if n == 0 then panelEmpty:Show() else panelEmpty:Hide() end
-	panelCount:SetText(passives == 1 and "1 passive active" or (passives .. " passives active"))
+	local unique = 0
+	for _ in pairs(seen) do unique = unique + 1 end
+	local text = unique == 1 and "1 passive active" or (unique .. " passives active")
+	if passives > unique then
+		text = text .. "  |cffff4040(" .. (passives - unique) .. " duplicate" .. (passives - unique == 1 and "" or "s") .. ")|r"
+	end
+	panelCount:SetText(text)
 end
 
 panel:SetScript("OnShow", UpdatePassivePanel)
