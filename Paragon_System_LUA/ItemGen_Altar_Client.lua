@@ -25,6 +25,9 @@ if AIO.AddAddon() then return end
 if ParagonAltar_Loaded then return end
 ParagonAltar_Loaded = true
 
+-- FLUI (fl-lua-scripts AIO_UI/) draws the window in the player's theme.
+local FLUI = assert(FLUI, "the Cursed Altar needs AIO_UI/FLUI_Client.lua loaded first")
+
 local PREFIX = "PIGALT"
 local CURSED_MARKER = 920001
 local TOKEN_ITEM = 920300
@@ -163,42 +166,13 @@ end
 	The window
 ------------------------------------------------------------------------]]
 
-local frame = CreateFrame("Frame", "ParagonAltarFrame", UIParent)
-frame:SetSize(FRAME_W, FRAME_H)
-frame:SetPoint("CENTER", 0, 20)
-frame:SetFrameStrata("DIALOG")
-frame:SetToplevel(true)
-frame:SetClampedToScreen(true)
-frame:SetMovable(true)
-frame:EnableMouse(true)
-frame:RegisterForDrag("LeftButton")
-frame:SetScript("OnDragStart", frame.StartMoving)
-frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-frame:SetBackdrop({
-	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-	edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-	tile = true, tileSize = 32, edgeSize = 32,
-	insets = { left = 11, right = 12, top = 12, bottom = 11 },
+local frame = FLUI.Window("ParagonAltarFrame", {
+	width = FRAME_W, height = FRAME_H, point = { "CENTER", 0, 20 },
+	title = "Cursed Altar", icon = ESSENCE_ICON,
 })
-frame:SetBackdropColor(0.07, 0.03, 0.10, 0.96)
-frame:Hide()
-tinsert(UISpecialFrames, "ParagonAltarFrame")
-if AIO.SavePosition then AIO.SavePosition(frame, true) end
-
-local header = frame:CreateTexture(nil, "ARTWORK")
-header:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-header:SetSize(300, 64)
-header:SetPoint("TOP", 0, 12)
-
-local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-title:SetPoint("TOP", header, "TOP", 0, -14)
-title:SetText("Cursed Altar")
-
-local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-closeButton:SetPoint("TOPRIGHT", -6, -6)
 
 local subtitle = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-subtitle:SetPoint("TOP", header, "BOTTOM", 0, 2)
+subtitle:SetPoint("TOP", 0, -(FLUI.HEADER + 2))
 subtitle:SetText("Sacrifice cursed items, collect their passives, bind them to new items.")
 
 -- Content area (the three panels)
@@ -280,15 +254,12 @@ local function NewList(parent, w, h, rowH, fill, onClick, onEnter)
 		local r = CreateFrame("Button", nil, L.content)
 		r:SetSize(w, rowH)
 		r:SetPoint("TOPLEFT", 0, -(i - 1) * rowH)
-		r:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+		FLUI.Hover(r)
 
-		r.sel = r:CreateTexture(nil, "BACKGROUND")
-		r.sel:SetAllPoints()
-		r.sel:SetTexture(0.55, 0.25, 0.85, 0.30)
+		r.sel = FLUI.Selection(r)
 		r.sel:Hide()
 
-		r.line = r:CreateTexture(nil, "BACKGROUND")
-		r.line:SetTexture(1, 1, 1, 0.06)
+		r.line = FLUI.Line(r, true, "BACKGROUND")
 		r.line:SetHeight(1)
 		r.line:SetPoint("BOTTOMLEFT", 0, 0)
 		r.line:SetPoint("BOTTOMRIGHT", 0, 0)
@@ -437,20 +408,17 @@ local function SelectTab(id)
 	for _, t in ipairs(TABS) do
 		if t.id == id then
 			panels[t.id]:Show()
-			tabButtons[t.id]:LockHighlight()
 		else
 			panels[t.id]:Hide()
-			tabButtons[t.id]:UnlockHighlight()
 		end
+		tabButtons[t.id]:SetSelected(t.id == id)
 	end
 	if RefreshAll then RefreshAll() end
 end
 
 for i, t in ipairs(TABS) do
-	local b = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-	b:SetSize(120, 24)
+	local b = FLUI.Button(frame, t.name, 120, 24)
 	b:SetPoint("TOPLEFT", AREA_X + (i - 1) * 126, -88)
-	b:SetText(t.name)
 	b:SetScript("OnClick", function()
 		PlaySound("igMainMenuOptionCheckBoxOn")
 		SelectTab(t.id)
@@ -504,17 +472,9 @@ local sacList = NewList(sacPanel, SAC_LIST_W, AREA_H - 4, 44,
 	end)
 sacList.scroll:SetPoint("TOPLEFT", 0, -2)
 
-local sacDetail = CreateFrame("Frame", nil, sacPanel)
+local sacDetail = FLUI.Panel(sacPanel)
 sacDetail:SetPoint("TOPLEFT", SAC_DETAIL_X, -2)
 sacDetail:SetPoint("BOTTOMRIGHT", 0, 0)
-sacDetail:SetBackdrop({
-	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-	tile = true, tileSize = 16, edgeSize = 14,
-	insets = { left = 3, right = 3, top = 3, bottom = 3 },
-})
-sacDetail:SetBackdropColor(0.1, 0.05, 0.14, 0.9)
-sacDetail:SetBackdropBorderColor(0.5, 0.3, 0.7, 1)
 
 local sacItemIcon = sacDetail:CreateTexture(nil, "ARTWORK")
 sacItemIcon:SetSize(40, 40)
@@ -556,10 +516,8 @@ sacHint:SetJustifyH("LEFT")
 sacHint:SetJustifyV("BOTTOM")
 sacHint:SetHeight(60)
 
-local sacButton = CreateFrame("Button", nil, sacDetail, "UIPanelButtonTemplate")
-sacButton:SetSize(150, 26)
+local sacButton = FLUI.Button(sacDetail, "Sacrifice", 150, 26)
 sacButton:SetPoint("BOTTOM", 0, 14)
-sacButton:SetText("Sacrifice")
 
 StaticPopupDialogs["PARAGONALTAR_SACRIFICE"] = {
 	text = "Destroy %s for %s Cursed Essence?\n\nThis cannot be undone.",
@@ -837,10 +795,8 @@ bindHint:SetPoint("BOTTOMLEFT", 4, 6)
 bindHint:SetPoint("BOTTOMRIGHT", -170, 6)
 bindHint:SetJustifyH("LEFT")
 
-local bindButton = CreateFrame("Button", nil, bindPanel, "UIPanelButtonTemplate")
-bindButton:SetSize(150, 26)
+local bindButton = FLUI.Button(bindPanel, "Bind", 150, 26)
 bindButton:SetPoint("BOTTOMRIGHT", 0, 12)
-bindButton:SetText("Bind")
 
 StaticPopupDialogs["PARAGONALTAR_BIND"] = {
 	text = "Bind %s?\n\n%s\n\nThe item is re-rolled as a cursed item: its current Paragon enchantments are replaced.",

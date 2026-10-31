@@ -396,21 +396,15 @@ local SLOT_NAMES = {
 local PANEL_ROWS = 19
 local ROW_HEIGHT = 18   -- one line per slot: all 19 slots fit the sheet's height, no scrolling (operator 2026-10-31)
 
+-- FLUI (fl-lua-scripts AIO_UI/) draws the panel in the player's theme; the
+-- tooltip code above works without it.
+local FLUI = assert(FLUI, "the passive panel needs AIO_UI/FLUI_Client.lua loaded first")
+
 local panel = CreateFrame("Frame", "ParagonPassivePanel", PaperDollFrame)
 panel:SetWidth(260)
 panel:SetHeight(424)
 panel:SetPoint("TOPLEFT", CharacterFrame, "TOPRIGHT", -34, -12)
-panel:SetBackdrop({
-	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-	edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-	tile = true, tileSize = 32, edgeSize = 32,
-	insets = { left = 11, right = 12, top = 12, bottom = 11 },
-})
-panel:SetBackdropColor(0.07, 0.03, 0.10, 0.96)
-
-local panelTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-panelTitle:SetPoint("TOP", 0, -20)
-panelTitle:SetText("Active Paragon Passives")
+FLUI.MakeWindow(panel, { title = "Active Paragon Passives", close = false, bannerWidth = 240 })
 
 local panelEmpty = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 panelEmpty:SetPoint("TOPLEFT", 20, -48)
