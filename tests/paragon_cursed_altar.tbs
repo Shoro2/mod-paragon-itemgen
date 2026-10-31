@@ -1,0 +1,87 @@
+# mod-paragon-itemgen: the Cursed Altar (operator 2026-10-30/31). A warrior (Paragon 50, role dps / strength,
+# spec Arms) gets a cursed rare chest and a plain rare chest. Away from the altar nothing happens; at the altar
+# (Hall of the Guardian, map 736) the cursed chest is sacrificed for 5 Cursed Essence (rare yield) and its passive
+# joins the account's collection; the plain chest is then bound to Mortal Strike +50% (950007, unlocked by the GM)
+# for 30 Cursed Essence + 2 Tainted Heartstones (rare costs). Refusals: too little essence, a mage passive
+# (950002 = +20% Intellect, in no warrior pool).
+# Bag positions: the bot's backpack holds only its hearthstone in slot 1, so the two chests land in slots 2 and 3.
+name    Paragon item gen - the Cursed Altar: sacrifice, collection, bind
+timeout 120s
+
+bot q warrior slot=25 paragon=50
+
+place 0 -8828.0 647.0 94.3 0
+require q alive
+do q destroy 37612
+do q destroy 37395
+do q destroy 920300
+do q destroy 920301
+as q .paragon role dps
+as q .paragon stat strength
+
+# spec Arms at the Paragon Artificer (option 0 is the info line, 1 = Arms)
+pick artificer creature:900100 near q
+require artificer exists
+do q approach artificer
+do q gossip artificer option 1
+expect output has Spec set to
+
+do gm target q
+as gm .additem 37612 1 cursed
+as gm .additem 37395 1
+wait 1s
+expect q item 37612 == 1
+expect q item 37395 == 1
+
+# away from the altar
+as q .paragon altar sacrifice 0 2
+expect output has You must stand at the Cursed Altar
+expect q item 37612 == 1
+
+# at the altar
+place 736 506.0 533.8 1212.89 3.14
+require q map 736
+as q .paragon altar list
+expect output has at altar 1
+expect output has sacrifice bag 0 slot 2: item 37612
+expect output has target bag 0 slot 3: item 37395
+
+as q .paragon altar sacrifice 0 2
+expect output has crumbles into 5 Cursed Essence
+expect q item 37612 == 0
+expect q item 920300 == 5
+
+do gm target q
+as gm .paragon altar unlock 950007
+expect output has unlocked
+
+# 5 essence, a rare costs 30
+as q .paragon altar bind 0 3 950007
+expect output has You need 30 Cursed Essence
+
+do gm target q
+as gm .additem 920300 25
+as gm .additem 920301 2
+wait 1s
+expect q item 920300 == 30
+expect q item 920301 == 2
+
+# a mage passive is not for a warrior
+do gm target q
+as gm .paragon altar unlock 950002
+as q .paragon altar bind 0 3 950002
+expect output has does not belong to your class
+
+as q .paragon altar bind 0 3 950007
+expect output has is bound to
+expect q item 920300 == 0
+expect q item 920301 == 0
+expect q item 37395 == 1
+as q .paragon altar list
+expect output has sacrifice bag 0 slot 3: item 37395 enchant 950007
+
+cleanup
+do q destroy 37612
+do q destroy 37395
+do q destroy 920300
+do q destroy 920301
