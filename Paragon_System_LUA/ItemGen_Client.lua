@@ -86,6 +86,7 @@ end
 
 local equipCache = {}
 local bagCache   = {}
+local UpdatePassivePanel   -- the character sheet's list of active passives (defined at the end)
 
 local ClientHandler = AIO.AddHandlers("PARAGON_ITEMGEN_CLIENT", {})
 
@@ -103,6 +104,7 @@ function ClientHandler.ReceiveData(player, items)
 			cr2Idx      = e.c2i, cr2Amount = e.c2a,
 			cursed      = e.cu,
 			passiveName = e.pn,
+			passiveSpell = e.ps,
 		}
 
 		if e.t == "E" then
@@ -112,6 +114,8 @@ function ClientHandler.ReceiveData(player, items)
 			bagCache[e.b][e.s] = data
 		end
 	end
+
+	if UpdatePassivePanel then UpdatePassivePanel() end
 end
 
 -- ============================================================
@@ -375,6 +379,110 @@ refreshFrame:SetScript("OnEvent", function(self, event)
 		end
 	end)
 end)
+
+-- ============================================================
+-- Character sheet: the active passives, one line per equipped cursed item
+-- (operator 2026-10-31: "im charactermenu soll man rechts eine auflistung der
+-- aktiven paragon spells je slot haben"). Fed by equipCache - the same data
+-- the tooltips use - so it refreshes whenever the server pushes new data.
+-- ============================================================
+
+local SLOT_NAMES = {
+	[1] = "Head", [2] = "Neck", [3] = "Shoulder", [4] = "Shirt", [5] = "Chest",
+	[6] = "Waist", [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hands",
+	[11] = "Finger", [12] = "Finger", [13] = "Trinket", [14] = "Trinket", [15] = "Back",
+	[16] = "Main Hand", [17] = "Off Hand", [18] = "Ranged", [19] = "Tabard",
+}
+local PANEL_ROWS = 19
+local ROW_HEIGHT = 30
+
+local panel = CreateFrame("Frame", "ParagonPassivePanel", PaperDollFrame)
+panel:SetWidth(230)
+panel:SetHeight(424)
+panel:SetPoint("TOPLEFT", CharacterFrame, "TOPRIGHT", -34, -12)
+panel:SetBackdrop({
+	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+	edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+	tile = true, tileSize = 32, edgeSize = 32,
+	insets = { left = 11, right = 12, top = 12, bottom = 11 },
+})
+panel:SetBackdropColor(0.07, 0.03, 0.10, 0.96)
+
+local panelTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+panelTitle:SetPoint("TOP", 0, -20)
+panelTitle:SetText("Active Paragon Passives")
+
+local panelEmpty = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+panelEmpty:SetPoint("TOPLEFT", 20, -48)
+panelEmpty:SetPoint("RIGHT", -20, 0)
+panelEmpty:SetJustifyH("LEFT")
+panelEmpty:SetText("No cursed item equipped. Cursed items carry one passive each.")
+
+local panelCount = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+panelCount:SetPoint("BOTTOM", 0, 20)
+
+local rows = {}
+for i = 1, PANEL_ROWS do
+	local row = CreateFrame("Button", nil, panel)
+	row:SetHeight(ROW_HEIGHT - 2)
+	row:SetPoint("TOPLEFT", 18, -44 - (i - 1) * ROW_HEIGHT)
+	row:SetPoint("RIGHT", -18, 0)
+
+	row.icon = row:CreateTexture(nil, "ARTWORK")
+	row.icon:SetSize(24, 24)
+	row.icon:SetPoint("LEFT", 0, 0)
+
+	row.slot = row:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	row.slot:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 6, 0)
+
+	row.name = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	row.name:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 6, 0)
+	row.name:SetPoint("RIGHT", 0, 0)
+	row.name:SetJustifyH("LEFT")
+
+	row:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		if self.spellId then
+			GameTooltip:SetHyperlink("spell:" .. self.spellId)
+		elseif self.invSlot then
+			GameTooltip:SetInventoryItem("player", self.invSlot)
+		end
+		GameTooltip:Show()
+	end)
+	row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	row:Hide()
+	rows[i] = row
+end
+
+UpdatePassivePanel = function()
+	local n, passives = 0, 0
+	for invSlot = 1, 19 do
+		local data = equipCache[invSlot]
+		if data and data.cursed then
+			n = n + 1
+			local row = rows[n]
+			row.invSlot = invSlot
+			row.spellId = data.passiveSpell
+			row.slot:SetText(SLOT_NAMES[invSlot] or "")
+			local icon = data.passiveSpell and select(3, GetSpellInfo(data.passiveSpell))
+			if data.passiveName then
+				passives = passives + 1
+				row.name:SetText(COLOR_PASSIVE .. data.passiveName .. COLOR_RESET)
+				row.icon:SetTexture(icon or "Interface\\Icons\\Spell_Shadow_CurseOfTounges")
+			else
+				row.name:SetText(COLOR_CURSED .. "Cursed (no passive)" .. COLOR_RESET)
+				row.icon:SetTexture(GetInventoryItemTexture("player", invSlot) or "Interface\\Icons\\INV_Misc_QuestionMark")
+			end
+			row:Show()
+		end
+	end
+	for i = n + 1, PANEL_ROWS do rows[i]:Hide() end
+	if n == 0 then panelEmpty:Show() else panelEmpty:Hide() end
+	panelCount:SetText(passives == 1 and "1 passive active" or (passives .. " passives active"))
+end
+
+panel:SetScript("OnShow", UpdatePassivePanel)
+UpdatePassivePanel()
 
 -- ============================================================
 DEFAULT_CHAT_FRAME:AddMessage("|cff9b59b6[Paragon ItemGen]|r Tooltip enhancement loaded.")

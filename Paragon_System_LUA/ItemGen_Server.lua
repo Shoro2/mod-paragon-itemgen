@@ -29,12 +29,14 @@ local PASSIVE_MAX      = 950999
 -- ============================================================
 
 local passiveNames = {}
+local passiveSpells = {}   -- enchantment id -> the spell it carries (the character sheet's icon and tooltip)
 
 local function LoadPassiveNames()
-	local query = WorldDBQuery("SELECT `enchantmentId`, `name` FROM `paragon_passive_spell_pool`")
+	local query = WorldDBQuery("SELECT `enchantmentId`, `name`, `spellId` FROM `paragon_passive_spell_pool`")
 	if not query then return end
 	repeat
 		passiveNames[query:GetUInt32(0)] = query:GetString(1)
+		passiveSpells[query:GetUInt32(0)] = query:GetUInt32(2)
 	until not query:NextRow()
 end
 
@@ -101,12 +103,14 @@ local function BuildItemData(item)
 	local slot11 = GetPropEnchantId(item, 11)
 	local cursed = false
 	local passiveName = nil
+	local passiveSpell = nil
 
 	if slot11 == ENCHANT_CURSED then
 		cursed = true
 	elseif slot11 >= PASSIVE_MIN and slot11 <= PASSIVE_MAX then
 		cursed = true
 		passiveName = passiveNames[slot11] or ("Enchantment #" .. slot11)
+		passiveSpell = passiveSpells[slot11]
 	end
 
 	return {
@@ -115,7 +119,8 @@ local function BuildItemData(item)
 		c1i = c1i, c1a = c1Amt,
 		c2i = c2i, c2a = c2Amt,
 		cu  = cursed,
-		pn  = passiveName
+		pn  = passiveName,
+		ps  = passiveSpell
 	}
 end
 
