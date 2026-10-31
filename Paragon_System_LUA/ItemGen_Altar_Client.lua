@@ -138,6 +138,18 @@ local function PassiveName(p)
 	return "Passive #" .. tostring(p.ench)
 end
 
+-- A passive is a custom class spell (mod-custom-spells): its icon is the stock spell it modifies, and a small badge
+-- ("+9", "+50%", "ALL" ...) says what changes. FLSpellBadge comes from CustomSpells_Badge_Client.lua, the texts from
+-- the server (FL_SpellBadges); without either the icons stay plain, so the window never depends on them.
+local function SetBadge(owner, spellId, anchor)
+	if FLSpellBadge then FLSpellBadge.Set(owner, spellId, anchor) end
+end
+
+local function BadgeText(spellId)
+	if FLSpellBadge then return FLSpellBadge.Text(spellId) end
+	return ""
+end
+
 -- icon, name, link, still-the-same-item for a synced bag record
 local function ItemInfo(rec)
 	local tex = GetContainerItemInfo(rec.bag, rec.slot)
@@ -356,6 +368,7 @@ end
 local function PaintPassive(b, p)
 	b.d = p
 	b.tex:SetTexture(SpellIcon(p.spellId))
+	SetBadge(b, p.spellId, b.tex)
 	if p.unlocked then
 		b.tex:SetDesaturated(nil)
 		b.tex:SetVertexColor(1, 1, 1)
@@ -448,7 +461,8 @@ local sacList = NewList(sacPanel, SAC_LIST_W, AREA_H - 4, 44,
 			r.sub:SetText(COLOR_GREY .. "Plain curse - unlocks no passive|r")
 		else
 			local p = PassiveOfSac(d)
-			r.sub:SetText(string.format("|T%s:14:14:0:0|t %s%s|r", SpellIcon(d.spellId), COLOR_PURPLE, PassiveName(p)))
+			r.sub:SetText(string.format("|T%s:14:14:0:0|t %s%s|r%s", SpellIcon(d.spellId), COLOR_PURPLE,
+				PassiveName(p), BadgeText(d.spellId)))
 		end
 		local badge
 		if d.ench == CURSED_MARKER then
@@ -589,6 +603,7 @@ local function RefreshSacrifice()
 		local p = PassiveOfSac(found)
 		sacPassiveIcon:Show()
 		sacPassiveIcon.tex:SetTexture(SpellIcon(found.spellId))
+		SetBadge(sacPassiveIcon, found.spellId, sacPassiveIcon.tex)
 		sacPassiveIcon.d = p
 		sacPassiveName:SetText(PassiveName(p))
 		sacPassiveBadge:SetText(found.known and (COLOR_GREY .. "Already in your collection|r")
