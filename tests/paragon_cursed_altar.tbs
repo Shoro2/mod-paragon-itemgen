@@ -18,13 +18,18 @@ do q destroy 920300
 do q destroy 920301
 as q .paragon role dps
 as q .paragon stat strength
+# the role rows are written asynchronously; the roll reads them synchronously
+wait 2s
 
 # spec Arms at the Paragon Artificer (option 0 is the info line, 1 = Arms)
 pick artificer creature:900100 near q
 require artificer exists
-do q approach artificer
+# approach stops at 6.2 yd here (the gossip handler takes 5.5): step next to the NPC
+do q goto -8823.0 640.0 94.2
+wait 1s
 do q gossip artificer option 1
 expect output has Spec set to
+wait 2s
 
 do gm target q
 as gm .additem 37612 1 cursed
@@ -43,11 +48,13 @@ place 736 506.0 533.8 1212.89 3.14
 require q map 736
 as q .paragon altar list
 expect output has at altar 1
-expect output has sacrifice bag 0 slot 2: item 37612
+expect output has sacrifice bag 0 slot 2: item 37612 enchant 95
 expect output has target bag 0 slot 3: item 37395
 
 as q .paragon altar sacrifice 0 2
 expect output has crumbles into 5 Cursed Essence
+# spec Arms: the curse carries a passive, so the sacrifice unlocks it (or names it as known on a rerun)
+expect output lacks plain curse
 expect q item 37612 == 0
 expect q item 920300 == 5
 
