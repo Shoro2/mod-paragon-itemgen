@@ -4,12 +4,12 @@
 -- (mod-custom-spells/data/spellbook_enUS.json) - edit the manifest or the
 -- tool, never this file. Enchantment ids are frozen in
 -- data/class_passive_enchants.json (items keep the id they rolled).
--- 218 spells, enchantments 950007-950224, weight 10 per spec (the stat passives
--- of paragon_passive_spells.sql weigh 100). Not in the pool: 900534 active (Barrage, a channel), 900713 active (Targeted Blink), 900741 active (Meteor), 900771 active (Comet Shower).
+-- 291 spells, enchantments 950007-950297, weight 10 per spec (the stat passives
+-- of paragon_passive_spells.sql weigh 100). Not in the pool: 900266 active (Divine Barrage, third concept list 2026-10-31), 900509 active (Switch Places, third concept list 2026-10-31), 900534 active (Barrage, a channel), 900576 active (Trap Grab, third concept list 2026-10-31), 900713 active (Targeted Blink), 900741 active (Meteor), 900771 active (Comet Shower).
 -- =============================================================
 
 -- Effect_1 3 = ITEM_ENCHANTMENT_TYPE_EQUIP_SPELL: the item casts EffectArg_1 on equip
-DELETE FROM `spellitemenchantment_dbc` WHERE `ID` BETWEEN 950007 AND 950224;
+DELETE FROM `spellitemenchantment_dbc` WHERE `ID` BETWEEN 950007 AND 950297;
 INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`, `Name_Lang_enUS`, `ItemVisual`, `Flags`, `Src_ItemID`, `Condition_Id`, `RequiredSkillID`, `RequiredSkillRank`, `MinLevel`) VALUES
 (950007, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900100, 0, 0, 'Passive: Mortal Strike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950008, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900101, 0, 0, 'Passive: Mortal Strike: -2 sec Cooldown', 0, 0, 0, 0, 0, 0, 0),
@@ -82,7 +82,7 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950075, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900933, 0, 0, 'Passive: Holy Fire Heals', 0, 0, 0, 0, 0, 0, 0),
 (950076, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900966, 0, 0, 'Passive: Shadow Eruption', 0, 0, 0, 0, 0, 0, 0),
 (950077, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900967, 0, 0, 'Passive: Spreading Shadows', 0, 0, 0, 0, 0, 0, 0),
-(950078, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900300, 0, 0, 'Passive: Dancing Rune Weapon: Three Blades', 0, 0, 0, 0, 0, 0, 0),
+(950078, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900300, 0, 0, 'Passive: Dancing Rune Weapon: Two Blades', 0, 0, 0, 0, 0, 0, 0),
 (950079, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900301, 0, 0, 'Passive: Dancing Rune Weapon: Double Cast', 0, 0, 0, 0, 0, 0, 0),
 (950080, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900302, 0, 0, 'Passive: Heart Strike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950081, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900303, 0, 0, 'Passive: Heart Strike: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
@@ -90,20 +90,20 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950083, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900333, 0, 0, 'Passive: Raise Dead: Frost Wyrm', 0, 0, 0, 0, 0, 0, 0),
 (950084, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900366, 0, 0, 'Passive: Plague Eruption', 0, 0, 0, 0, 0, 0, 0),
 (950085, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900400, 0, 0, 'Passive: Chain Lightning: +6 Targets', 0, 0, 0, 0, 0, 0, 0),
-(950086, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900401, 0, 0, 'Passive: Totems Follow You', 0, 0, 0, 0, 0, 0, 0),
+(950086, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900401, 0, 0, 'Passive: Totem Spirits', 0, 0, 0, 0, 0, 0, 0),
 (950087, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900402, 0, 0, 'Passive: Fire Elemental: Ragnaros', 0, 0, 0, 0, 0, 0, 0),
 (950088, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900403, 0, 0, 'Passive: Lava Overload', 0, 0, 0, 0, 0, 0, 0),
 (950089, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900404, 0, 0, 'Passive: Lava Burst: Spreading Flame', 0, 0, 0, 0, 0, 0, 0),
 (950090, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900405, 0, 0, 'Passive: Flame Shock: Lava Reset', 0, 0, 0, 0, 0, 0, 0),
 (950091, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900406, 0, 0, 'Passive: Lava Burst: Two Charges', 0, 0, 0, 0, 0, 0, 0),
 (950092, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900407, 0, 0, 'Passive: Lava Burst: Clearcast Instant', 0, 0, 0, 0, 0, 0, 0),
-(950093, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900433, 0, 0, 'Passive: Totems Follow You', 0, 0, 0, 0, 0, 0, 0),
+(950093, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900433, 0, 0, 'Passive: Totem Spirits', 0, 0, 0, 0, 0, 0, 0),
 (950094, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900434, 0, 0, 'Passive: Maelstrom Fury', 0, 0, 0, 0, 0, 0, 0),
 (950095, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900435, 0, 0, 'Passive: Empowered Summons', 0, 0, 0, 0, 0, 0, 0),
 (950096, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900436, 0, 0, 'Passive: Spirit Wolf Call', 0, 0, 0, 0, 0, 0, 0),
 (950097, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900437, 0, 0, 'Passive: Spirit Wolves: Haste', 0, 0, 0, 0, 0, 0, 0),
 (950098, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900438, 0, 0, 'Passive: Spirit Wolves: Chain Lightning', 0, 0, 0, 0, 0, 0, 0),
-(950099, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900466, 0, 0, 'Passive: Totems Follow You', 0, 0, 0, 0, 0, 0, 0),
+(950099, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900466, 0, 0, 'Passive: Totem Spirits', 0, 0, 0, 0, 0, 0, 0),
 (950100, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900467, 0, 0, 'Passive: Deep Reserves', 0, 0, 0, 0, 0, 0, 0),
 (950101, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900700, 0, 0, 'Passive: Deep Reserves', 0, 0, 0, 0, 0, 0, 0),
 (950102, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900701, 0, 0, 'Passive: Arcane Barrage: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
@@ -167,7 +167,7 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950160, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900334, 0, 0, 'Passive: Obliterate: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950161, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900335, 0, 0, 'Passive: Obliterate: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
 (950162, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900336, 0, 0, 'Passive: Howling Blast: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
-(950163, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900337, 0, 0, 'Passive: Howling Blast: Frost Fever', 0, 0, 0, 0, 0, 0, 0),
+(950163, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900337, 0, 0, 'Passive: Howling Blast: Diseases', 0, 0, 0, 0, 0, 0, 0),
 (950164, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900338, 0, 0, 'Passive: Lichborne: Leech', 0, 0, 0, 0, 0, 0, 0),
 (950165, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900340, 0, 0, 'Passive: Icy Talons: Frozen Strikes', 0, 0, 0, 0, 0, 0, 0),
 (950166, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900369, 0, 0, 'Passive: Ghoul Cleave', 0, 0, 0, 0, 0, 0, 0),
@@ -228,9 +228,82 @@ INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`,
 (950221, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901039, 0, 0, 'Passive: Ursine Bulwark', 0, 0, 0, 0, 0, 0, 0),
 (950222, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901052, 0, 0, 'Passive: Swipe (Cat): +50% Damage', 0, 0, 0, 0, 0, 0, 0),
 (950223, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901053, 0, 0, 'Passive: Frontal Assault', 0, 0, 0, 0, 0, 0, 0),
-(950224, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901054, 0, 0, 'Passive: Berserk: Unleashed', 0, 0, 0, 0, 0, 0, 0);
+(950224, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901054, 0, 0, 'Passive: Berserk: Unleashed', 0, 0, 0, 0, 0, 0, 0),
+(950225, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900213, 0, 0, 'Passive: Enlightened Heals', 0, 0, 0, 0, 0, 0, 0),
+(950226, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900214, 0, 0, 'Passive: Holy Shock: Light Erupts', 0, 0, 0, 0, 0, 0, 0),
+(950227, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900242, 0, 0, 'Passive: Wave of Light', 0, 0, 0, 0, 0, 0, 0),
+(950228, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900573, 0, 0, 'Passive: Traps: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950229, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900574, 0, 0, 'Passive: Random Traps', 0, 0, 0, 0, 0, 0, 0),
+(950230, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900575, 0, 0, 'Passive: Trap Echo', 0, 0, 0, 0, 0, 0, 0),
+(950231, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900606, 0, 0, 'Passive: Hunger for Blood: Contagion', 0, 0, 0, 0, 0, 0, 0),
+(950232, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900643, 0, 0, 'Passive: Fan of Knives: Serrated Blades', 0, 0, 0, 0, 0, 0, 0),
+(950233, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900907, 0, 0, 'Passive: Penance: +50% Healing', 0, 0, 0, 0, 0, 0, 0),
+(950234, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900908, 0, 0, 'Passive: Mana Burn: Burnt Reserve', 0, 0, 0, 0, 0, 0, 0),
+(950235, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900910, 0, 0, 'Passive: Inner Fire: Fifty Stacks', 0, 0, 0, 0, 0, 0, 0),
+(950236, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900912, 0, 0, 'Passive: Penance: Four More', 0, 0, 0, 0, 0, 0, 0),
+(950237, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900944, 0, 0, 'Passive: Holy Nova: +50% Damage and Healing', 0, 0, 0, 0, 0, 0, 0),
+(950238, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900945, 0, 0, 'Passive: Prayer of Mending: +50% Healing', 0, 0, 0, 0, 0, 0, 0),
+(950239, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900946, 0, 0, 'Passive: Prayer of Mending: Second Jump', 0, 0, 0, 0, 0, 0, 0),
+(950240, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900947, 0, 0, 'Passive: Divine Hymn: Waves of Light', 0, 0, 0, 0, 0, 0, 0),
+(950241, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900949, 0, 0, 'Passive: Spirit of Redemption: Spirit Casting', 0, 0, 0, 0, 0, 0, 0),
+(950242, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900977, 0, 0, 'Passive: Mind Sear: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950243, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900978, 0, 0, 'Passive: Mind Flay: Quickened Flay', 0, 0, 0, 0, 0, 0, 0),
+(950244, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900980, 0, 0, 'Passive: Mind Sear: Three More', 0, 0, 0, 0, 0, 0, 0),
+(950245, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900981, 0, 0, 'Passive: Shadowfiend: Dark Pull', 0, 0, 0, 0, 0, 0, 0),
+(950246, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900309, 0, 0, 'Passive: Death Strike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950247, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900310, 0, 0, 'Passive: Death Strike: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950248, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900311, 0, 0, 'Passive: Plague Retaliation', 0, 0, 0, 0, 0, 0, 0),
+(950249, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900312, 0, 0, 'Passive: Rune Tap: Shadow Power', 0, 0, 0, 0, 0, 0, 0),
+(950250, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900343, 0, 0, 'Passive: Frost Strike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950251, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900344, 0, 0, 'Passive: Frost Strike: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950252, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900345, 0, 0, 'Passive: Frost Wyrm: Frozen Breath', 0, 0, 0, 0, 0, 0, 0),
+(950253, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900375, 0, 0, 'Passive: Scourge Strike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950254, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900376, 0, 0, 'Passive: Scourge Strike: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950255, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900377, 0, 0, 'Passive: Death Coil: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950256, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900378, 0, 0, 'Passive: Death Coil: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950257, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900379, 0, 0, 'Passive: Summon Gargoyle: Army', 0, 0, 0, 0, 0, 0, 0),
+(950258, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900380, 0, 0, 'Passive: Corpse Explosion: Corpse Blast', 0, 0, 0, 0, 0, 0, 0),
+(950259, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900381, 0, 0, 'Passive: Corpse Explosion: Corpse Worms', 0, 0, 0, 0, 0, 0, 0),
+(950260, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900441, 0, 0, 'Passive: Stormstrike: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950261, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900442, 0, 0, 'Passive: Stormstrike: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950262, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900443, 0, 0, 'Passive: Lava Lash: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950263, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900444, 0, 0, 'Passive: Lava Lash: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950264, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900445, 0, 0, 'Passive: Ghost Wolf: Storm Rush', 0, 0, 0, 0, 0, 0, 0),
+(950265, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900468, 0, 0, 'Passive: Healing Lightning', 0, 0, 0, 0, 0, 0, 0),
+(950266, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900469, 0, 0, 'Passive: Earth Shield: Spikes', 0, 0, 0, 0, 0, 0, 0),
+(950267, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900470, 0, 0, 'Passive: Earth Shield: Charging Heals', 0, 0, 0, 0, 0, 0, 0),
+(950268, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900472, 0, 0, 'Passive: Earth Shield: Unlimited Targets', 0, 0, 0, 0, 0, 0, 0),
+(950269, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900473, 0, 0, 'Passive: Healing Stream: Surge', 0, 0, 0, 0, 0, 0, 0),
+(950270, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900720, 0, 0, 'Passive: Blink: Mirror Image', 0, 0, 0, 0, 0, 0, 0),
+(950271, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900721, 0, 0, 'Passive: Mirror Images: Strength in Numbers', 0, 0, 0, 0, 0, 0, 0),
+(950272, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900723, 0, 0, 'Passive: Blink: Through the Enemy', 0, 0, 0, 0, 0, 0, 0),
+(950273, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900744, 0, 0, 'Passive: Dragon''s Breath: Living Bomb', 0, 0, 0, 0, 0, 0, 0),
+(950274, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900745, 0, 0, 'Passive: Molten Armor: Flamestrike', 0, 0, 0, 0, 0, 0, 0),
+(950275, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900775, 0, 0, 'Passive: Ice Block: Ice Lance Barrage', 0, 0, 0, 0, 0, 0, 0),
+(950276, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900776, 0, 0, 'Passive: Ice Block: Detonation', 0, 0, 0, 0, 0, 0, 0),
+(950277, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900807, 0, 0, 'Passive: Curse of Agony: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950278, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900808, 0, 0, 'Passive: Drain Life: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950279, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900809, 0, 0, 'Passive: Life Tap: Dark Tithe', 0, 0, 0, 0, 0, 0, 0),
+(950280, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900811, 0, 0, 'Passive: Drain Life: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950281, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900853, 0, 0, 'Passive: Shadow Cleave: Unlimited Targets', 0, 0, 0, 0, 0, 0, 0),
+(950282, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900854, 0, 0, 'Passive: Shadow Cleave: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950283, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900855, 0, 0, 'Passive: Felhunter: Spell Shackles', 0, 0, 0, 0, 0, 0, 0),
+(950284, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900857, 0, 0, 'Passive: Demon Charge: Shockwave', 0, 0, 0, 0, 0, 0, 0),
+(950285, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900878, 0, 0, 'Passive: Soul Fire: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950286, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900879, 0, 0, 'Passive: Soul Fire: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950287, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900880, 0, 0, 'Passive: Immolate: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950288, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900881, 0, 0, 'Passive: Incinerate: Stoked Soul Fire', 0, 0, 0, 0, 0, 0, 0),
+(950289, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 900883, 0, 0, 'Passive: Shadow Bolt: Shadow Immolate', 0, 0, 0, 0, 0, 0, 0),
+(950290, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901008, 0, 0, 'Passive: Wrath: Starfire Surge', 0, 0, 0, 0, 0, 0, 0),
+(950291, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901010, 0, 0, 'Passive: Force of Nature: Star Owls', 0, 0, 0, 0, 0, 0, 0),
+(950292, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901042, 0, 0, 'Passive: Maul: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950293, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901043, 0, 0, 'Passive: Maul: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950294, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901057, 0, 0, 'Passive: Claw: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950295, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901058, 0, 0, 'Passive: Claw: +9 Targets', 0, 0, 0, 0, 0, 0, 0),
+(950296, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901059, 0, 0, 'Passive: Shred: +50% Damage', 0, 0, 0, 0, 0, 0, 0),
+(950297, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 901060, 0, 0, 'Passive: Shred: +9 Targets', 0, 0, 0, 0, 0, 0, 0);
 
-DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` BETWEEN 950007 AND 950224;
+DELETE FROM `paragon_passive_spell_pool` WHERE `enchantmentId` BETWEEN 950007 AND 950297;
 INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `category`, `minParagonLevel`, `minItemLevel`) VALUES
 (950007, 900100, 'Mortal Strike: +50% Damage', 0, 1, 0),
 (950008, 900101, 'Mortal Strike: -2 sec Cooldown', 0, 1, 0),
@@ -303,7 +376,7 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950075, 900933, 'Holy Fire Heals', 0, 1, 0),
 (950076, 900966, 'Shadow Eruption', 0, 1, 0),
 (950077, 900967, 'Spreading Shadows', 0, 1, 0),
-(950078, 900300, 'Dancing Rune Weapon: Three Blades', 0, 1, 0),
+(950078, 900300, 'Dancing Rune Weapon: Two Blades', 0, 1, 0),
 (950079, 900301, 'Dancing Rune Weapon: Double Cast', 0, 1, 0),
 (950080, 900302, 'Heart Strike: +50% Damage', 0, 1, 0),
 (950081, 900303, 'Heart Strike: +9 Targets', 0, 1, 0),
@@ -311,20 +384,20 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950083, 900333, 'Raise Dead: Frost Wyrm', 0, 1, 0),
 (950084, 900366, 'Plague Eruption', 0, 1, 0),
 (950085, 900400, 'Chain Lightning: +6 Targets', 0, 1, 0),
-(950086, 900401, 'Totems Follow You', 0, 1, 0),
+(950086, 900401, 'Totem Spirits', 0, 1, 0),
 (950087, 900402, 'Fire Elemental: Ragnaros', 0, 1, 0),
 (950088, 900403, 'Lava Overload', 0, 1, 0),
 (950089, 900404, 'Lava Burst: Spreading Flame', 0, 1, 0),
 (950090, 900405, 'Flame Shock: Lava Reset', 0, 1, 0),
 (950091, 900406, 'Lava Burst: Two Charges', 0, 1, 0),
 (950092, 900407, 'Lava Burst: Clearcast Instant', 0, 1, 0),
-(950093, 900433, 'Totems Follow You', 0, 1, 0),
+(950093, 900433, 'Totem Spirits', 0, 1, 0),
 (950094, 900434, 'Maelstrom Fury', 0, 1, 0),
 (950095, 900435, 'Empowered Summons', 0, 1, 0),
 (950096, 900436, 'Spirit Wolf Call', 0, 1, 0),
 (950097, 900437, 'Spirit Wolves: Haste', 0, 1, 0),
 (950098, 900438, 'Spirit Wolves: Chain Lightning', 0, 1, 0),
-(950099, 900466, 'Totems Follow You', 0, 1, 0),
+(950099, 900466, 'Totem Spirits', 0, 1, 0),
 (950100, 900467, 'Deep Reserves', 0, 1, 0),
 (950101, 900700, 'Deep Reserves', 0, 1, 0),
 (950102, 900701, 'Arcane Barrage: +50% Damage', 0, 1, 0),
@@ -388,7 +461,7 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950160, 900334, 'Obliterate: +50% Damage', 0, 1, 0),
 (950161, 900335, 'Obliterate: +9 Targets', 0, 1, 0),
 (950162, 900336, 'Howling Blast: +50% Damage', 0, 1, 0),
-(950163, 900337, 'Howling Blast: Frost Fever', 0, 1, 0),
+(950163, 900337, 'Howling Blast: Diseases', 0, 1, 0),
 (950164, 900338, 'Lichborne: Leech', 0, 1, 0),
 (950165, 900340, 'Icy Talons: Frozen Strikes', 0, 1, 0),
 (950166, 900369, 'Ghoul Cleave', 0, 1, 0),
@@ -449,9 +522,82 @@ INSERT INTO `paragon_passive_spell_pool` (`enchantmentId`, `spellId`, `name`, `c
 (950221, 901039, 'Ursine Bulwark', 0, 1, 0),
 (950222, 901052, 'Swipe (Cat): +50% Damage', 0, 1, 0),
 (950223, 901053, 'Frontal Assault', 0, 1, 0),
-(950224, 901054, 'Berserk: Unleashed', 0, 1, 0);
+(950224, 901054, 'Berserk: Unleashed', 0, 1, 0),
+(950225, 900213, 'Enlightened Heals', 0, 1, 0),
+(950226, 900214, 'Holy Shock: Light Erupts', 0, 1, 0),
+(950227, 900242, 'Wave of Light', 0, 1, 0),
+(950228, 900573, 'Traps: +50% Damage', 0, 1, 0),
+(950229, 900574, 'Random Traps', 0, 1, 0),
+(950230, 900575, 'Trap Echo', 0, 1, 0),
+(950231, 900606, 'Hunger for Blood: Contagion', 0, 1, 0),
+(950232, 900643, 'Fan of Knives: Serrated Blades', 0, 1, 0),
+(950233, 900907, 'Penance: +50% Healing', 0, 1, 0),
+(950234, 900908, 'Mana Burn: Burnt Reserve', 0, 1, 0),
+(950235, 900910, 'Inner Fire: Fifty Stacks', 0, 1, 0),
+(950236, 900912, 'Penance: Four More', 0, 1, 0),
+(950237, 900944, 'Holy Nova: +50% Damage and Healing', 0, 1, 0),
+(950238, 900945, 'Prayer of Mending: +50% Healing', 0, 1, 0),
+(950239, 900946, 'Prayer of Mending: Second Jump', 0, 1, 0),
+(950240, 900947, 'Divine Hymn: Waves of Light', 0, 1, 0),
+(950241, 900949, 'Spirit of Redemption: Spirit Casting', 0, 1, 0),
+(950242, 900977, 'Mind Sear: +50% Damage', 0, 1, 0),
+(950243, 900978, 'Mind Flay: Quickened Flay', 0, 1, 0),
+(950244, 900980, 'Mind Sear: Three More', 0, 1, 0),
+(950245, 900981, 'Shadowfiend: Dark Pull', 0, 1, 0),
+(950246, 900309, 'Death Strike: +50% Damage', 0, 1, 0),
+(950247, 900310, 'Death Strike: +9 Targets', 0, 1, 0),
+(950248, 900311, 'Plague Retaliation', 0, 1, 0),
+(950249, 900312, 'Rune Tap: Shadow Power', 0, 1, 0),
+(950250, 900343, 'Frost Strike: +50% Damage', 0, 1, 0),
+(950251, 900344, 'Frost Strike: +9 Targets', 0, 1, 0),
+(950252, 900345, 'Frost Wyrm: Frozen Breath', 0, 1, 0),
+(950253, 900375, 'Scourge Strike: +50% Damage', 0, 1, 0),
+(950254, 900376, 'Scourge Strike: +9 Targets', 0, 1, 0),
+(950255, 900377, 'Death Coil: +50% Damage', 0, 1, 0),
+(950256, 900378, 'Death Coil: +9 Targets', 0, 1, 0),
+(950257, 900379, 'Summon Gargoyle: Army', 0, 1, 0),
+(950258, 900380, 'Corpse Explosion: Corpse Blast', 0, 1, 0),
+(950259, 900381, 'Corpse Explosion: Corpse Worms', 0, 1, 0),
+(950260, 900441, 'Stormstrike: +50% Damage', 0, 1, 0),
+(950261, 900442, 'Stormstrike: +9 Targets', 0, 1, 0),
+(950262, 900443, 'Lava Lash: +50% Damage', 0, 1, 0),
+(950263, 900444, 'Lava Lash: +9 Targets', 0, 1, 0),
+(950264, 900445, 'Ghost Wolf: Storm Rush', 0, 1, 0),
+(950265, 900468, 'Healing Lightning', 0, 1, 0),
+(950266, 900469, 'Earth Shield: Spikes', 0, 1, 0),
+(950267, 900470, 'Earth Shield: Charging Heals', 0, 1, 0),
+(950268, 900472, 'Earth Shield: Unlimited Targets', 0, 1, 0),
+(950269, 900473, 'Healing Stream: Surge', 0, 1, 0),
+(950270, 900720, 'Blink: Mirror Image', 0, 1, 0),
+(950271, 900721, 'Mirror Images: Strength in Numbers', 0, 1, 0),
+(950272, 900723, 'Blink: Through the Enemy', 0, 1, 0),
+(950273, 900744, 'Dragon''s Breath: Living Bomb', 0, 1, 0),
+(950274, 900745, 'Molten Armor: Flamestrike', 0, 1, 0),
+(950275, 900775, 'Ice Block: Ice Lance Barrage', 0, 1, 0),
+(950276, 900776, 'Ice Block: Detonation', 0, 1, 0),
+(950277, 900807, 'Curse of Agony: +50% Damage', 0, 1, 0),
+(950278, 900808, 'Drain Life: +50% Damage', 0, 1, 0),
+(950279, 900809, 'Life Tap: Dark Tithe', 0, 1, 0),
+(950280, 900811, 'Drain Life: +9 Targets', 0, 1, 0),
+(950281, 900853, 'Shadow Cleave: Unlimited Targets', 0, 1, 0),
+(950282, 900854, 'Shadow Cleave: +50% Damage', 0, 1, 0),
+(950283, 900855, 'Felhunter: Spell Shackles', 0, 1, 0),
+(950284, 900857, 'Demon Charge: Shockwave', 0, 1, 0),
+(950285, 900878, 'Soul Fire: +50% Damage', 0, 1, 0),
+(950286, 900879, 'Soul Fire: +9 Targets', 0, 1, 0),
+(950287, 900880, 'Immolate: +9 Targets', 0, 1, 0),
+(950288, 900881, 'Incinerate: Stoked Soul Fire', 0, 1, 0),
+(950289, 900883, 'Shadow Bolt: Shadow Immolate', 0, 1, 0),
+(950290, 901008, 'Wrath: Starfire Surge', 0, 1, 0),
+(950291, 901010, 'Force of Nature: Star Owls', 0, 1, 0),
+(950292, 901042, 'Maul: +50% Damage', 0, 1, 0),
+(950293, 901043, 'Maul: +9 Targets', 0, 1, 0),
+(950294, 901057, 'Claw: +50% Damage', 0, 1, 0),
+(950295, 901058, 'Claw: +9 Targets', 0, 1, 0),
+(950296, 901059, 'Shred: +50% Damage', 0, 1, 0),
+(950297, 901060, 'Shred: +9 Targets', 0, 1, 0);
 
-DELETE FROM `paragon_spec_spell_assign` WHERE `enchantmentId` BETWEEN 950007 AND 950224;
+DELETE FROM `paragon_spec_spell_assign` WHERE `enchantmentId` BETWEEN 950007 AND 950297;
 INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VALUES
 -- 900100 Mortal Strike: +50% Damage (Warrior Arms -> Arms)
 (1, 950007, 10),
@@ -595,7 +741,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (31, 950076, 10),
 -- 900967 Spreading Shadows (Priest Shadow -> Shadow)
 (31, 950077, 10),
--- 900300 Dancing Rune Weapon: Three Blades (Death Knight Blood -> Blood)
+-- 900300 Dancing Rune Weapon: Two Blades (Death Knight Blood -> Blood)
 (7, 950078, 10),
 -- 900301 Dancing Rune Weapon: Double Cast (Death Knight Blood -> Blood)
 (7, 950079, 10),
@@ -611,7 +757,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (9, 950084, 10),
 -- 900400 Chain Lightning: +6 Targets (Shaman Elemental -> Ele)
 (10, 950085, 10),
--- 900401 Totems Follow You (Shaman Elemental -> Ele)
+-- 900401 Totem Spirits (Shaman Elemental -> Ele)
 (10, 950086, 10),
 -- 900402 Fire Elemental: Ragnaros (Shaman Elemental -> Ele)
 (10, 950087, 10),
@@ -625,7 +771,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (10, 950091, 10),
 -- 900407 Lava Burst: Clearcast Instant (Shaman Elemental -> Ele)
 (10, 950092, 10),
--- 900433 Totems Follow You (Shaman Enhancement -> Enhance)
+-- 900433 Totem Spirits (Shaman Enhancement -> Enhance)
 (11, 950093, 10),
 -- 900434 Maelstrom Fury (Shaman Enhancement -> Enhance)
 (11, 950094, 10),
@@ -637,7 +783,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (11, 950097, 10),
 -- 900438 Spirit Wolves: Chain Lightning (Shaman Enhancement -> Enhance)
 (11, 950098, 10),
--- 900466 Totems Follow You (Shaman Restoration -> RestoSham)
+-- 900466 Totem Spirits (Shaman Restoration -> RestoSham)
 (12, 950099, 10),
 -- 900467 Deep Reserves (Shaman Restoration -> RestoSham)
 (12, 950100, 10),
@@ -765,7 +911,7 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 (8, 950161, 10),
 -- 900336 Howling Blast: +50% Damage (Death Knight Frost -> DKFrost)
 (8, 950162, 10),
--- 900337 Howling Blast: Frost Fever (Death Knight Frost -> DKFrost)
+-- 900337 Howling Blast: Diseases (Death Knight Frost -> DKFrost)
 (8, 950163, 10),
 -- 900338 Lichborne: Leech (Death Knight Frost -> DKFrost)
 (8, 950164, 10),
@@ -888,4 +1034,150 @@ INSERT INTO `paragon_spec_spell_assign` (`specId`, `enchantmentId`, `weight`) VA
 -- 901053 Frontal Assault (Druid Feral -> FeralDPS)
 (19, 950223, 10),
 -- 901054 Berserk: Unleashed (Druid Feral -> FeralDPS)
-(19, 950224, 10);
+(19, 950224, 10),
+-- 900213 Enlightened Heals (Paladin Holy -> HolyPala)
+(4, 950225, 10),
+-- 900214 Holy Shock: Light Erupts (Paladin Holy -> HolyPala)
+(4, 950226, 10),
+-- 900242 Wave of Light (Paladin Protection -> ProtPala)
+(5, 950227, 10),
+-- 900573 Traps: +50% Damage (Hunter Survival -> Surv)
+(15, 950228, 10),
+-- 900574 Random Traps (Hunter Survival -> Surv)
+(15, 950229, 10),
+-- 900575 Trap Echo (Hunter Survival -> Surv)
+(15, 950230, 10),
+-- 900606 Hunger for Blood: Contagion (Rogue Assassination -> Assa)
+(20, 950231, 10),
+-- 900643 Fan of Knives: Serrated Blades (Rogue Combat -> Combat)
+(21, 950232, 10),
+-- 900907 Penance: +50% Healing (Priest Discipline -> Disc)
+(29, 950233, 10),
+-- 900908 Mana Burn: Burnt Reserve (Priest Discipline -> Disc)
+(29, 950234, 10),
+-- 900910 Inner Fire: Fifty Stacks (Priest Discipline -> Disc)
+(29, 950235, 10),
+-- 900912 Penance: Four More (Priest Discipline -> Disc)
+(29, 950236, 10),
+-- 900944 Holy Nova: +50% Damage and Healing (Priest Holy -> HolyPri)
+(30, 950237, 10),
+-- 900945 Prayer of Mending: +50% Healing (Priest Holy -> HolyPri)
+(30, 950238, 10),
+-- 900946 Prayer of Mending: Second Jump (Priest Holy -> HolyPri)
+(30, 950239, 10),
+-- 900947 Divine Hymn: Waves of Light (Priest Holy -> HolyPri)
+(30, 950240, 10),
+-- 900949 Spirit of Redemption: Spirit Casting (Priest Holy -> HolyPri)
+(30, 950241, 10),
+-- 900977 Mind Sear: +50% Damage (Priest Shadow -> Shadow)
+(31, 950242, 10),
+-- 900978 Mind Flay: Quickened Flay (Priest Shadow -> Shadow)
+(31, 950243, 10),
+-- 900980 Mind Sear: Three More (Priest Shadow -> Shadow)
+(31, 950244, 10),
+-- 900981 Shadowfiend: Dark Pull (Priest Shadow -> Shadow)
+(31, 950245, 10),
+-- 900309 Death Strike: +50% Damage (Death Knight Blood -> Blood)
+(7, 950246, 10),
+-- 900310 Death Strike: +9 Targets (Death Knight Blood -> Blood)
+(7, 950247, 10),
+-- 900311 Plague Retaliation (Death Knight Blood -> Blood)
+(7, 950248, 10),
+-- 900312 Rune Tap: Shadow Power (Death Knight Blood -> Blood)
+(7, 950249, 10),
+-- 900343 Frost Strike: +50% Damage (Death Knight Frost -> DKFrost)
+(8, 950250, 10),
+-- 900344 Frost Strike: +9 Targets (Death Knight Frost -> DKFrost)
+(8, 950251, 10),
+-- 900345 Frost Wyrm: Frozen Breath (Death Knight Frost -> DKFrost)
+(8, 950252, 10),
+-- 900375 Scourge Strike: +50% Damage (Death Knight Unholy -> Unholy)
+(9, 950253, 10),
+-- 900376 Scourge Strike: +9 Targets (Death Knight Unholy -> Unholy)
+(9, 950254, 10),
+-- 900377 Death Coil: +50% Damage (Death Knight Unholy -> Unholy)
+(9, 950255, 10),
+-- 900378 Death Coil: +9 Targets (Death Knight Unholy -> Unholy)
+(9, 950256, 10),
+-- 900379 Summon Gargoyle: Army (Death Knight Unholy -> Unholy)
+(9, 950257, 10),
+-- 900380 Corpse Explosion: Corpse Blast (Death Knight Unholy -> Unholy)
+(9, 950258, 10),
+-- 900381 Corpse Explosion: Corpse Worms (Death Knight Unholy -> Unholy)
+(9, 950259, 10),
+-- 900441 Stormstrike: +50% Damage (Shaman Enhancement -> Enhance)
+(11, 950260, 10),
+-- 900442 Stormstrike: +9 Targets (Shaman Enhancement -> Enhance)
+(11, 950261, 10),
+-- 900443 Lava Lash: +50% Damage (Shaman Enhancement -> Enhance)
+(11, 950262, 10),
+-- 900444 Lava Lash: +9 Targets (Shaman Enhancement -> Enhance)
+(11, 950263, 10),
+-- 900445 Ghost Wolf: Storm Rush (Shaman Enhancement -> Enhance)
+(11, 950264, 10),
+-- 900468 Healing Lightning (Shaman Restoration -> RestoSham)
+(12, 950265, 10),
+-- 900469 Earth Shield: Spikes (Shaman Restoration -> RestoSham)
+(12, 950266, 10),
+-- 900470 Earth Shield: Charging Heals (Shaman Restoration -> RestoSham)
+(12, 950267, 10),
+-- 900472 Earth Shield: Unlimited Targets (Shaman Restoration -> RestoSham)
+(12, 950268, 10),
+-- 900473 Healing Stream: Surge (Shaman Restoration -> RestoSham)
+(12, 950269, 10),
+-- 900720 Blink: Mirror Image (Mage Arcane -> Arcane)
+(23, 950270, 10),
+-- 900721 Mirror Images: Strength in Numbers (Mage Arcane -> Arcane)
+(23, 950271, 10),
+-- 900723 Blink: Through the Enemy (Mage Arcane -> Arcane)
+(23, 950272, 10),
+-- 900744 Dragon's Breath: Living Bomb (Mage Fire -> Fire)
+(24, 950273, 10),
+-- 900745 Molten Armor: Flamestrike (Mage Fire -> Fire)
+(24, 950274, 10),
+-- 900775 Ice Block: Ice Lance Barrage (Mage Frost -> MageFrost)
+(25, 950275, 10),
+-- 900776 Ice Block: Detonation (Mage Frost -> MageFrost)
+(25, 950276, 10),
+-- 900807 Curse of Agony: +50% Damage (Warlock Affliction -> Affli)
+(26, 950277, 10),
+-- 900808 Drain Life: +50% Damage (Warlock Affliction -> Affli)
+(26, 950278, 10),
+-- 900809 Life Tap: Dark Tithe (Warlock Affliction -> Affli)
+(26, 950279, 10),
+-- 900811 Drain Life: +9 Targets (Warlock Affliction -> Affli)
+(26, 950280, 10),
+-- 900853 Shadow Cleave: Unlimited Targets (Warlock Demonology -> Demo)
+(27, 950281, 10),
+-- 900854 Shadow Cleave: +50% Damage (Warlock Demonology -> Demo)
+(27, 950282, 10),
+-- 900855 Felhunter: Spell Shackles (Warlock Demonology -> Demo)
+(27, 950283, 10),
+-- 900857 Demon Charge: Shockwave (Warlock Demonology -> Demo)
+(27, 950284, 10),
+-- 900878 Soul Fire: +50% Damage (Warlock Destruction -> Destro)
+(28, 950285, 10),
+-- 900879 Soul Fire: +9 Targets (Warlock Destruction -> Destro)
+(28, 950286, 10),
+-- 900880 Immolate: +9 Targets (Warlock Destruction -> Destro)
+(28, 950287, 10),
+-- 900881 Incinerate: Stoked Soul Fire (Warlock Destruction -> Destro)
+(28, 950288, 10),
+-- 900883 Shadow Bolt: Shadow Immolate (Warlock Destruction -> Destro)
+(28, 950289, 10),
+-- 901008 Wrath: Starfire Surge (Druid Balance -> Balance)
+(16, 950290, 10),
+-- 901010 Force of Nature: Star Owls (Druid Balance -> Balance)
+(16, 950291, 10),
+-- 901042 Maul: +50% Damage (Druid Feral -> FeralTank)
+(18, 950292, 10),
+-- 901043 Maul: +9 Targets (Druid Feral -> FeralTank)
+(18, 950293, 10),
+-- 901057 Claw: +50% Damage (Druid Feral -> FeralDPS)
+(19, 950294, 10),
+-- 901058 Claw: +9 Targets (Druid Feral -> FeralDPS)
+(19, 950295, 10),
+-- 901059 Shred: +50% Damage (Druid Feral -> FeralDPS)
+(19, 950296, 10),
+-- 901060 Shred: +9 Targets (Druid Feral -> FeralDPS)
+(19, 950297, 10);

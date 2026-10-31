@@ -41,6 +41,9 @@ EXCLUDED = {
     900713: "active (Targeted Blink)",
     900771: "active (Comet Shower)",
     900741: "active (Meteor)",
+    900266: "active (Divine Barrage, third concept list 2026-10-31)",
+    900509: "active (Switch Places, third concept list 2026-10-31)",
+    900576: "active (Trap Grab, third concept list 2026-10-31)",
 }
 SPECS = {
     ("Warrior", "Arms"): [1], ("Warrior", "Fury"): [2], ("Warrior", "Protection"): [3],
@@ -63,7 +66,10 @@ SPECS = {
 # Evocation power: all three mage specs)
 SPELL_SPECS = {901033: [18], 901035: [18], 901036: [18], 901037: [18], 901039: [18],
                901049: [19], 901051: [19], 901052: [19], 901053: [19], 901054: [19],
-               900108: [1, 2], 900118: [1], 900170: [1, 3], 900707: [23, 24, 25]}
+               900108: [1, 2], 900118: [1], 900170: [1, 3], 900707: [23, 24, 25],
+               # third concept list 2026-10-31: the new ferals
+               901042: [18], 901043: [18],
+               901057: [19], 901058: [19], 901059: [19], 901060: [19]}
 SPEC_NAMES = {1: "Arms", 2: "Fury", 3: "WarProt", 4: "HolyPala", 5: "ProtPala", 6: "Ret",
               7: "Blood", 8: "DKFrost", 9: "Unholy", 10: "Ele", 11: "Enhance", 12: "RestoSham",
               13: "BM", 14: "MM", 15: "Surv", 16: "Balance", 17: "RestoDru", 18: "FeralTank",
