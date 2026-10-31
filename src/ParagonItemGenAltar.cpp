@@ -375,6 +375,58 @@ namespace
         return true;
     }
 
+    // The same data as text in the chat - for a player without the window, a GM, and the test bots (whose
+    // scenarios read system messages, not addon whispers)
+    bool HandleAltarList(ChatHandler* handler)
+    {
+        Player* player = handler->GetPlayer();
+        if (!player)
+            return false;
+
+        handler->PSendSysMessage("[Cursed Altar] at altar {}, Cursed Essence {}, Tainted Heartstones {}",
+            AtAltar(player) ? 1 : 0, player->GetItemCount(PARAGON_ALTAR_TOKEN_ITEM),
+            player->GetItemCount(PARAGON_ALTAR_MATERIAL_ITEM));
+
+        std::unordered_set<uint32> const collection = LoadCollection(player->GetSession()->GetAccountId());
+        ForEachBagItem(player, [&](uint32 bag, uint32 slot, Item* item)
+        {
+            ItemTemplate const* proto = item->GetTemplate();
+            if (!proto)
+                return;
+
+            uint32 const enchantId = SlotElevenEnchant(item);
+            if (enchantId == PARAGON_ENCHANT_CURSED_ID || ParagonItemGenIsPassiveEnchant(enchantId))
+                handler->PSendSysMessage("[Cursed Altar] sacrifice bag {} slot {}: item {} enchant {}{}", bag, slot,
+                    item->GetEntry(), enchantId, collection.count(enchantId) ? " (known)" : "");
+            if (ParagonItemGenIsEligibleItem(item))
+                handler->PSendSysMessage("[Cursed Altar] target bag {} slot {}: item {}", bag, slot, item->GetEntry());
+        });
+
+        for (uint32 enchantId : collection)
+            handler->PSendSysMessage("[Cursed Altar] collected {}", enchantId);
+        return true;
+    }
+
+    // GM: puts a passive into the selected player's account collection without a sacrifice (testers, test bots)
+    bool HandleAltarUnlock(ChatHandler* handler, uint32 enchantId)
+    {
+        Player* target = handler->getSelectedPlayerOrSelf();
+        if (!target)
+            return false;
+
+        if (!ParagonItemGenIsPassiveEnchant(enchantId) || ParagonItemGenPassiveName(enchantId).empty())
+        {
+            handler->PSendSysMessage("[Cursed Altar] {} is not a passive of the pool.", enchantId);
+            return true;
+        }
+
+        AddToCollection(target->GetSession()->GetAccountId(), enchantId);
+        handler->PSendSysMessage("[Cursed Altar] {} unlocked for {}'s account: {}", enchantId, target->GetName(),
+            ParagonItemGenPassiveName(enchantId));
+        SendSync(target);
+        return true;
+    }
+
     bool HandleAltarSacrifice(ChatHandler* handler, uint32 bag, uint32 slot)
     {
         Player* player = handler->GetPlayer();
@@ -569,6 +621,8 @@ public:
         static ChatCommandTable altarSubCommands =
         {
             { "sync",      HandleAltarSync,      SEC_PLAYER, Console::No },
+            { "list",      HandleAltarList,      SEC_PLAYER, Console::No },
+            { "unlock",    HandleAltarUnlock,    SEC_GAMEMASTER, Console::No },
             { "sacrifice", HandleAltarSacrifice, SEC_PLAYER, Console::No },
             { "bind",      HandleAltarBind,      SEC_PLAYER, Console::No },
         };

@@ -5,7 +5,7 @@
 --            920301 Tainted Heartstone  the second price of a bind (how it drops is separate work)
 --   object   921010 Cursed Altar        type 10 (goober), ScriptName go_paragon_cursed_altar, opens the window
 --   spawn    8921011 in the Hall of the Guardian (map 736)
---   command  .paragon altar sync | sacrifice | bind
+--   command  .paragon altar sync | list | sacrifice | bind
 --
 -- Both items are CURRENCY TOKENS exactly like the Procedural Dungeon remnants (mod_pdungeon_currency.sql): class 10,
 -- BagFamily 8192 (BAG_FAMILY_MASK_CURRENCY_TOKENS), Flags 2048, stackable 2147483647. ObjectMgr::LoadItemTemplates
@@ -67,8 +67,10 @@ INSERT INTO `gameobject`
      0, 100, 1, '', 12340, 'Cursed Altar (mod-paragon-itemgen)');
 
 -- 5. The chat commands behind the window (SEC_PLAYER)
-DELETE FROM `command` WHERE `name` IN ('paragon altar sync', 'paragon altar sacrifice', 'paragon altar bind');
+DELETE FROM `command` WHERE `name` IN ('paragon altar sync', 'paragon altar list', 'paragon altar unlock', 'paragon altar sacrifice', 'paragon altar bind');
 INSERT INTO `command` (`name`, `security`, `help`) VALUES
 ('paragon altar sync', 0, 'Syntax: .paragon altar sync\r\nSends the Cursed Altar window its data: the cursed items in your bags, the items you can bind, your collection and the Cursed Essence and Tainted Heartstone balances. Works anywhere.'),
+('paragon altar list', 0, 'Syntax: .paragon altar list\r\nLists in the chat what the Cursed Altar window shows: your balances, the cursed items you can sacrifice and the items you can bind (with their bag and slot), and your collected passives.'),
+('paragon altar unlock', 2, 'Syntax: .paragon altar unlock $enchantmentId\r\nGM: adds that passive (950001-950999) to the selected player\'s account collection without a sacrifice.'),
 ('paragon altar sacrifice', 0, 'Syntax: .paragon altar sacrifice $bag $slot\r\nAt the Cursed Altar: destroys the cursed item at that position (bag 0 = backpack, 1-4 = bags; slot counts from 1), adds its passive to your account collection and pays Cursed Essence by its quality.'),
 ('paragon altar bind', 0, 'Syntax: .paragon altar bind $bag $slot $enchantmentId\r\nAt the Cursed Altar: re-rolls the item at that position as a cursed item with the chosen passive from your collection (it must be in the pool of your class). Costs Cursed Essence and Tainted Heartstones by the item\'s quality.');
