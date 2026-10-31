@@ -506,8 +506,14 @@ UpdatePassivePanel = function()
 	panelCount:SetText(text)
 end
 
-panel:SetScript("OnShow", UpdatePassivePanel)
+-- The cache starts empty after a /reload: AIO delivers this file after PLAYER_ENTERING_WORLD has fired, so the
+-- refresh frame above never asks. Ask once now, and again whenever the sheet opens (the answer redraws the panel).
+panel:SetScript("OnShow", function()
+	UpdatePassivePanel()
+	AIO.Handle("PARAGON_ITEMGEN_SERVER", "RequestRefresh")
+end)
 UpdatePassivePanel()
+AIO.Handle("PARAGON_ITEMGEN_SERVER", "RequestRefresh")
 
 -- ============================================================
 DEFAULT_CHAT_FRAME:AddMessage("|cff9b59b6[Paragon ItemGen]|r Tooltip enhancement loaded.")
