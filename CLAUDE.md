@@ -45,6 +45,7 @@ Trade/mail restriction: items are cross-checked against the recipient's Paragon 
 | **DB tables (acore_characters)** | `character_paragon_role` | (role 0=Tank, 1=DPS, 2=Healer) + (mainStat) |
 | | `character_paragon_item` | Tracking per `itemGuid` (paragonLevel, role, mainStat, statAmount, cursed) |
 | | `character_paragon_spec` | Spec selection (for cursed-item passives) |
+| | `account_paragon_passive_collection` | Cursed Altar: the passives an account unlocked by sacrificing cursed items |
 | **DB tables (acore_world)** | `paragon_passive_spell_pool` | Pool of available passives (with min level, min item level) |
 | | `paragon_spec_spell_assign` | Spec → spell weighting |
 | | `spellitemenchantment_dbc` | DBC override with ~11,323 custom enchantments |
@@ -53,10 +54,12 @@ Trade/mail restriction: items are cross-checked against the recipient's Paragon 
 | | 950001-950999 | Passive-spell enchantments (cursed items only): 950001-950006 stat passives, 950007+ the custom class spells (`tools/gen_class_passives.py`) |
 | **Custom spells** | only uses the passives from `paragon_passive_spell_pool` |
 | **AIO handler names** | `Paragon_ItemGen` (server) / `Paragon_ItemGen_Client` (client) | for tooltip display |
-| **Slash commands** | (none) | |
+| **Slash commands** | `/altar` | opens the Cursed Altar window (`Paragon_System_LUA/ItemGen_Altar_Client.lua`; global `ParagonAltar_Open()`) |
 | **GM commands (all SEC_PLAYER)** | `.paragon role tank/dps/healer` (resting required) | |
 | | `.paragon stat str/agi/int/spi` (resting required) | |
 | | `.paragon info` | shows role, mainStat, ParagonLevel |
+| | `.paragon altar sync` / `sacrifice <bag> <slot>` / `bind <bag> <slot> <enchantId>` | Cursed Altar (`src/ParagonItemGenAltar.cpp`; sacrifice and bind need the altar object 921010 within `Altar.Range`) |
+| **Altar items / object** | 920300 Cursed Essence, 920301 Tainted Heartstone | currency tokens (CurrencyTypes ID 366/367); altar object 921010 (`go_paragon_cursed_altar`) |
 
 ## Scaling (top level)
 

@@ -29,7 +29,9 @@
 #include "DBCStores.h"
 #include "ObjectGuid.h"
 #include "SpellAuraEffects.h"
+#include <algorithm>
 #include <random>
+#include <unordered_map>
 #include <vector>
 #include <mutex>
 
@@ -82,7 +84,8 @@ enum class CursedContext : uint8
     QuestReward,    // OnPlayerQuestRewardItem - TALENT_TAG_CURSED_QUEST
     Vendor,         // OnPlayerAfterStoreOrEquipNewItem - no talent bonus
     Module,         // another module's request (ParagonItemGenRollCursed) - always cursed
-    Command         // a GM's .additem (OnPlayerAddItemByCommand) - never cursed; ".additem ... cursed" uses Module
+    Command,        // a GM's .additem (OnPlayerAddItemByCommand) - never cursed; ".additem ... cursed" uses Module
+    Altar           // the Cursed Altar's bind (ParagonItemGenRollCursedWithPassive) - always cursed, passive forced
 };
 
 // ============================================================
@@ -92,6 +95,7 @@ enum class CursedContext : uint8
 struct SpecPoolEntry
 {
     uint32 enchantmentId;
+    uint32 spellId;     // paragon_passive_spell_pool.spellId (icon and tooltip of the altar window)
     std::string name;
     uint32 weight;
     uint32 minParagonLevel;
@@ -101,6 +105,15 @@ struct SpecPoolEntry
 // specId -> list of available spells with weights
 static std::unordered_map<uint8, std::vector<SpecPoolEntry>> sSpecPools;
 static std::mutex sSpecPoolMutex;
+
+// The whole paragon_passive_spell_pool catalog (enchantment id -> spell, name): it also holds passives that no
+// spec lists any more ("retired": their assignment rows are gone, the pool row stays).
+struct PassiveCatalogEntry
+{
+    uint32 spellId;
+    std::string name;
+};
+static std::unordered_map<uint32, PassiveCatalogEntry> sPassiveCatalog;
 
 // ============================================================
 // Stat name lookup for debug logging
@@ -338,6 +351,18 @@ static void LoadPassiveSpellPool()
     std::lock_guard<std::mutex> lock(sSpecPoolMutex);
     sSpecPools.clear();
 
+    // The catalog with the spell each passive carries (the altar window shows its icon); the assignment
+    // statement is a core statement without that column, so it is read separately.
+    sPassiveCatalog.clear();
+    if (QueryResult catalogResult = WorldDatabase.Query("SELECT `enchantmentId`, `spellId`, `name` FROM `paragon_passive_spell_pool`"))
+    {
+        do
+        {
+            Field* catalogFields = catalogResult->Fetch();
+            sPassiveCatalog[catalogFields[0].Get<uint32>()] = { catalogFields[1].Get<uint32>(), catalogFields[2].Get<std::string>() };
+        } while (catalogResult->NextRow());
+    }
+
     // JOIN the assignment table with the pool catalog to get per-spec entries
     WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_PARAGON_SPEC_SPELL_ASSIGN);
     PreparedQueryResult result = WorldDatabase.Query(stmt);
@@ -372,7 +397,11 @@ static void LoadPassiveSpellPool()
             continue;
         }
 
-        sSpecPools[specId].push_back({ enchantmentId, name, weight, minPLevel, minILevel });
+        uint32 spellId = 0;
+        if (auto catalogIt = sPassiveCatalog.find(enchantmentId); catalogIt != sPassiveCatalog.end())
+            spellId = catalogIt->second.spellId;
+
+        sSpecPools[specId].push_back({ enchantmentId, spellId, name, weight, minPLevel, minILevel });
         ++totalEntries;
     } while (result->NextRow());
 
@@ -538,6 +567,7 @@ static char const* CursedContextName(CursedContext context)
         case CursedContext::Vendor:      return "vendor";
         case CursedContext::Module:      return "module";
         case CursedContext::Command:     return "command";
+        case CursedContext::Altar:       return "altar";
     }
     return "unknown";
 }
@@ -660,9 +690,11 @@ static void ApplySlotEnchantment(Player* player, Item* item, uint8 slot, uint32 
 // cursed roll, which is the one decision in here that differs per source.
 // Another module's request (CursedContext::Module) is always cursed, may bring
 // the profile along (its rows may still be on their way to the DB) and may be
-// quiet: no chat line, no visual.
+// quiet: no chat line, no visual. The Altar's bind (CursedContext::Altar) is
+// always cursed too and brings `forcedPassive`, the slot 11 enchantment that
+// replaces the passive roll.
 static bool ApplyParagonEnchantment(Player* player, Item* item, CursedContext context,
-    ParagonRollProfile const* profile = nullptr, bool quiet = false)
+    ParagonRollProfile const* profile = nullptr, bool quiet = false, uint32 forcedPassive = 0)
 {
     if (!conf_Enable || !player || !item)
     {
@@ -710,7 +742,7 @@ static bool ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
     // Check for cursed roll (CursedChance, plus the Forgotten Talents bonus for
     // crafted items and quest rewards - see CursedChanceFor)
     // The kill switch holds for a forced curse too (RollCursed's first check).
-    bool isCursed = context == CursedContext::Module ? conf_CursedChance > 0.0f :
+    bool isCursed = (context == CursedContext::Module || context == CursedContext::Altar) ? conf_CursedChance > 0.0f :
         context == CursedContext::Command ? false : RollCursed(player, context);
 
     // Slot 2 (9) & Slot 3 (10): Random combat ratings from role pool
@@ -788,8 +820,8 @@ static bool ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
 
     if (isCursed)
     {
-        // Cursed items: try to roll a passive spell for slot 11
-        passiveEnchantId = RollPassiveSpellEnchantment(
+        // Cursed items: try to roll a passive spell for slot 11 (the altar's bind names it)
+        passiveEnchantId = forcedPassive ? forcedPassive : RollPassiveSpellEnchantment(
             playerSpec, paragonLevel, item->GetTemplate()->ItemLevel);
 
         if (passiveEnchantId)
@@ -842,18 +874,19 @@ static bool ApplyParagonEnchantment(Player* player, Item* item, CursedContext co
 
     if (isCursed && passiveEnchantId)
     {
-        // Find the name of the passive spell from the spec pool
+        // Find the name of the passive spell in the pools (a forced passive may sit in another spec's pool)
         std::string passiveName = "Unknown";
         {
             std::lock_guard<std::mutex> lock(sSpecPoolMutex);
-            auto it = sSpecPools.find(static_cast<uint8>(playerSpec));
-            if (it != sSpecPools.end())
+            bool found = false;
+            for (auto pit = sSpecPools.begin(); !found && pit != sSpecPools.end(); ++pit)
             {
-                for (auto const& entry : it->second)
+                for (auto const& entry : pit->second)
                 {
                     if (entry.enchantmentId == passiveEnchantId)
                     {
                         passiveName = entry.name;
+                        found = true;
                         break;
                     }
                 }
@@ -938,6 +971,176 @@ bool ParagonItemGenRollCursed(Player* player, Item* item,
 {
     return ApplyParagonEnchantment(player, item, CursedContext::Module, profile,
         quiet);
+}
+
+// ============================================================
+// Cursed Altar API (ParagonItemGen.h; the window, the commands and the collection live in ParagonItemGenAltar.cpp)
+// ============================================================
+
+uint8 ParagonSpecClass(ParagonSpec spec)
+{
+    switch (spec)
+    {
+        case SPEC_WARRIOR_ARMS: case SPEC_WARRIOR_FURY: case SPEC_WARRIOR_PROT:
+            return CLASS_WARRIOR;
+        case SPEC_PALADIN_HOLY: case SPEC_PALADIN_PROT: case SPEC_PALADIN_RET:
+            return CLASS_PALADIN;
+        case SPEC_DK_BLOOD: case SPEC_DK_FROST: case SPEC_DK_UNHOLY:
+            return CLASS_DEATH_KNIGHT;
+        case SPEC_SHAMAN_ELE: case SPEC_SHAMAN_ENHANCE: case SPEC_SHAMAN_RESTO:
+            return CLASS_SHAMAN;
+        case SPEC_HUNTER_BM: case SPEC_HUNTER_MM: case SPEC_HUNTER_SURV:
+            return CLASS_HUNTER;
+        case SPEC_DRUID_BALANCE: case SPEC_DRUID_RESTO: case SPEC_DRUID_FERAL_TANK: case SPEC_DRUID_FERAL_DPS:
+            return CLASS_DRUID;
+        case SPEC_ROGUE_ASSA: case SPEC_ROGUE_COMBAT: case SPEC_ROGUE_SUB:
+            return CLASS_ROGUE;
+        case SPEC_MAGE_ARCANE: case SPEC_MAGE_FIRE: case SPEC_MAGE_FROST:
+            return CLASS_MAGE;
+        case SPEC_WARLOCK_AFFLI: case SPEC_WARLOCK_DEMO: case SPEC_WARLOCK_DESTRO:
+            return CLASS_WARLOCK;
+        case SPEC_PRIEST_DISC: case SPEC_PRIEST_HOLY: case SPEC_PRIEST_SHADOW:
+            return CLASS_PRIEST;
+        default:
+            return 0;
+    }
+}
+
+std::string ParagonItemGenPassiveName(uint32 enchantId)
+{
+    std::lock_guard<std::mutex> lock(sSpecPoolMutex);
+    auto it = sPassiveCatalog.find(enchantId);
+    return it != sPassiveCatalog.end() ? it->second.name : std::string();
+}
+
+uint32 ParagonItemGenPassiveSpell(uint32 enchantId)
+{
+    std::lock_guard<std::mutex> lock(sSpecPoolMutex);
+    auto it = sPassiveCatalog.find(enchantId);
+    return it != sPassiveCatalog.end() ? it->second.spellId : 0;
+}
+
+bool ParagonItemGenIsEligibleItem(Item* item)
+{
+    return IsEligibleItem(item);
+}
+
+bool ParagonItemGenIsPassiveEnchant(uint32 enchantId)
+{
+    return enchantId >= PARAGON_PASSIVE_ENCHANT_MIN && enchantId <= PARAGON_PASSIVE_ENCHANT_MAX;
+}
+
+void ParagonItemGenGetClassPassives(uint8 classId, std::vector<ParagonClassPassive>& out)
+{
+    out.clear();
+    if (!classId)
+        return;
+
+    std::unordered_map<uint32, size_t> index; // enchantment id -> position in `out`
+
+    {
+        std::lock_guard<std::mutex> lock(sSpecPoolMutex);
+        for (auto const& [specId, entries] : sSpecPools)
+        {
+            if (specId == 0 || specId >= SPEC_MAX || ParagonSpecClass(static_cast<ParagonSpec>(specId)) != classId)
+                continue;
+
+            for (SpecPoolEntry const& entry : entries)
+            {
+                auto [it, isNew] = index.try_emplace(entry.enchantmentId, out.size());
+                if (isNew)
+                    out.push_back({ entry.enchantmentId, entry.spellId, entry.name, 0 });
+                out[it->second].specMask |= 1u << (specId - 1);
+            }
+        }
+    }
+
+    std::sort(out.begin(), out.end(), [](ParagonClassPassive const& a, ParagonClassPassive const& b)
+    {
+        return a.enchantmentId < b.enchantmentId;
+    });
+}
+
+bool ParagonItemGenCheckAltarBind(Player* player, Item* item, uint32 passiveEnchantId, std::string& reason)
+{
+    if (!player || !item)
+    {
+        reason = "There is nothing to bind.";
+        return false;
+    }
+
+    if (!conf_Enable)
+    {
+        reason = "Paragon items are switched off.";
+        return false;
+    }
+
+    // The kill switch holds for the altar too: without it the roll would silently come out as a normal item.
+    if (conf_CursedChance <= 0.0f)
+    {
+        reason = "Cursed items are switched off.";
+        return false;
+    }
+
+    if (item->IsEquipped())
+    {
+        reason = "Take the item off first.";
+        return false;
+    }
+
+    if (!IsEligibleItem(item))
+    {
+        reason = "That item cannot carry Paragon enchantments.";
+        return false;
+    }
+
+    if (!ParagonItemGenIsPassiveEnchant(passiveEnchantId) || !sSpellItemEnchantmentStore.LookupEntry(passiveEnchantId))
+    {
+        reason = "That passive does not exist.";
+        return false;
+    }
+
+    if (GetPlayerParagonLevel(player) < conf_MinParagonLevel)
+    {
+        reason = "Your Paragon level is too low.";
+        return false;
+    }
+
+    if (!GetPlayerRoleInfo(player).found)
+    {
+        reason = "Set your role first with: .paragon role tank|dps|healer";
+        return false;
+    }
+
+    return true;
+}
+
+bool ParagonItemGenRollCursedWithPassive(Player* player, Item* item, uint32 passiveEnchantId)
+{
+    std::string reason;
+    if (!ParagonItemGenCheckAltarBind(player, item, passiveEnchantId, reason))
+    {
+        LOG_DEBUG("module", "ParagonItemGen: altar bind refused - {}", reason);
+        return false;
+    }
+
+    // Slots 7-11 are written by every roll; an item that already carries Paragon enchantments is cleared
+    // first (it is unequipped, so no stat has to be taken off) and put back if the roll fails.
+    uint32 previous[PARAGON_SLOT_TALENT_SPELL - PARAGON_SLOT_STAMINA + 1];
+    for (uint8 slot = PARAGON_SLOT_STAMINA; slot <= PARAGON_SLOT_TALENT_SPELL; ++slot)
+    {
+        previous[slot - PARAGON_SLOT_STAMINA] = item->GetEnchantmentId(EnchantmentSlot(slot));
+        item->ClearEnchantment(EnchantmentSlot(slot));
+    }
+
+    if (ApplyParagonEnchantment(player, item, CursedContext::Altar, nullptr, false, passiveEnchantId))
+        return true;
+
+    for (uint8 slot = PARAGON_SLOT_STAMINA; slot <= PARAGON_SLOT_TALENT_SPELL; ++slot)
+        if (uint32 id = previous[slot - PARAGON_SLOT_STAMINA])
+            item->SetEnchantment(EnchantmentSlot(slot), id, 0, 0);
+
+    return false;
 }
 
 // ============================================================

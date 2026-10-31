@@ -17,6 +17,8 @@
 #define PARAGON_ITEMGEN_H
 
 #include "Define.h"
+#include <string>
+#include <vector>
 
 // Enchantment ID layout: BASE + statIndex * 1000 + amount
 constexpr uint32 PARAGON_ENCHANT_BASE_ID       = 900000;
@@ -172,8 +174,58 @@ bool ParagonItemGenRollCursed(Player* player, Item* item,
 // Shared helper: spec name lookup (defined in ParagonItemGenNPC.cpp)
 char const* ParagonSpecName(ParagonSpec spec);
 
+// ============================================================
+// Cursed Altar (ParagonItemGenAltar.cpp; the roll and the pool live in ParagonItemGen.cpp)
+// ============================================================
+
+// Currency tokens (class 10 items with a CurrencyTypes record) and the altar object.
+constexpr uint32 PARAGON_ALTAR_TOKEN_ITEM    = 920300;  // "Cursed Essence": paid for a sacrifice, spent on a bind
+constexpr uint32 PARAGON_ALTAR_MATERIAL_ITEM = 920301;  // "Tainted Heartstone": the second price of a bind
+constexpr uint32 PARAGON_ALTAR_GO_ENTRY      = 921010;  // "Cursed Altar" (go_paragon_cursed_altar)
+
+// One passive of a class pool: the enchantment (slot 11), the spell it carries (icon, tooltip),
+// the pool name and the specs of that class whose pool holds it (bit n-1 = ParagonSpec n).
+struct ParagonClassPassive
+{
+    uint32 enchantmentId;
+    uint32 spellId;
+    std::string name;
+    uint32 specMask;
+};
+
+// The class (CLASS_*) a spec belongs to; 0 for SPEC_NONE and out-of-range values.
+uint8 ParagonSpecClass(ParagonSpec spec);
+
+// The class pool: every passive in at least one spec pool of `classId`, sorted by enchantment id.
+// Empty for a class without specs.
+void ParagonItemGenGetClassPassives(uint8 classId, std::vector<ParagonClassPassive>& out);
+
+// The catalog name of a passive (paragon_passive_spell_pool, whether or not a spec still lists it - a retired
+// passive keeps its catalog row); empty when the catalog has none.
+std::string ParagonItemGenPassiveName(uint32 enchantId);
+
+// The spell a passive carries (paragon_passive_spell_pool.spellId); 0 when the catalog has none.
+uint32 ParagonItemGenPassiveSpell(uint32 enchantId);
+
+// Whether the item may carry Paragon enchantments at all (weapon/armor, uncommon to legendary, item level).
+bool ParagonItemGenIsEligibleItem(Item* item);
+
+// True for the passive-spell enchantment range (950001-950999) - the slot 11 values that carry a passive.
+bool ParagonItemGenIsPassiveEnchant(uint32 enchantId);
+
+// Everything a bind needs from the roll BEFORE anything is taken: the kill switch, an unequipped
+// eligible item, the Paragon level and the stored role. False with the reason in `reason`.
+bool ParagonItemGenCheckAltarBind(Player* player, Item* item, uint32 passiveEnchantId, std::string& reason);
+
+// Re-rolls `item` as a CURSED item at the player's Paragon level with exactly `passiveEnchantId` in
+// slot 11: slots 7-11 are cleared first, then rolled like any cursed roll (all stats at the cursed
+// multiplier, soulbound). The old enchantments are restored when the roll fails. The item must be
+// unequipped. Run ParagonItemGenCheckAltarBind first; this checks again.
+bool ParagonItemGenRollCursedWithPassive(Player* player, Item* item, uint32 passiveEnchantId);
+
 void AddParagonItemGenScripts();
 void AddParagonItemGenCommandScripts();
 void AddParagonItemGenNPCScripts();
+void AddParagonItemGenAltarScripts();
 
 #endif // PARAGON_ITEMGEN_H

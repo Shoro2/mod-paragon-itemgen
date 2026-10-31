@@ -111,3 +111,50 @@ ParagonItemGen.PassiveSpell.Enable = 1
 # Chance (percent) for an item to receive a passive spell effect
 # 100.0 = every item gets one, 50.0 = 50% chance, 0 = disabled
 ParagonItemGen.PassiveSpell.Chance = 100.0
+
+###############################################################################
+# CURSED ALTAR
+#
+# The altar object (gameobject 921010, ScriptName go_paragon_cursed_altar, in the
+# Hall of the Guardian on map 736) turns cursed items into an account-wide
+# collection of passives and back:
+#   Sacrifice: a cursed item is destroyed, its passive (slot 11, 950001-950999)
+#              joins the account's collection (account_paragon_passive_collection)
+#              and the player gets Cursed Essence (item 920300) by item quality.
+#              A cursed item with only the plain "Cursed" marker pays but unlocks
+#              nothing.
+#   Bind:      an eligible item from the bags is re-rolled as a cursed item at the
+#              player's current Paragon level with exactly one collected passive
+#              of the player's class in slot 11. It costs Cursed Essence and
+#              Tainted Heartstones (item 920301), by the quality of the TARGET item.
+#              The cursed-item kill switch (CursedChance = 0) also stops binds.
+#
+# Chat commands behind the window (SEC_PLAYER):
+#   .paragon altar sync | sacrifice <bag> <slot> | bind <bag> <slot> <enchantmentId>
+# Sacrifice and bind only work within Altar.Range of a spawned altar object.
+###############################################################################
+
+# Enable/disable the altar (0: the object does nothing, the commands refuse)
+ParagonItemGen.Altar.Enable = 1
+
+# How close (yards) a player must be to a spawned altar object to sacrifice or bind
+ParagonItemGen.Altar.Range = 10
+
+# Cursed Essence paid per sacrificed item, by the item's quality
+ParagonItemGen.Altar.Yield.Uncommon  = 1
+ParagonItemGen.Altar.Yield.Rare      = 5
+ParagonItemGen.Altar.Yield.Epic      = 10
+ParagonItemGen.Altar.Yield.Legendary = 1000
+
+# Cursed Essence a bind costs, by the quality of the TARGET item
+ParagonItemGen.Altar.Cost.Uncommon  = 10
+ParagonItemGen.Altar.Cost.Rare      = 30
+ParagonItemGen.Altar.Cost.Epic      = 100
+ParagonItemGen.Altar.Cost.Legendary = 300
+
+# Tainted Heartstones a bind costs on top, by the quality of the TARGET item
+# (how heartstones are obtained is not part of this module's altar)
+ParagonItemGen.Altar.MaterialCost.Uncommon  = 1
+ParagonItemGen.Altar.MaterialCost.Rare      = 2
+ParagonItemGen.Altar.MaterialCost.Epic      = 5
+ParagonItemGen.Altar.MaterialCost.Legendary = 10
